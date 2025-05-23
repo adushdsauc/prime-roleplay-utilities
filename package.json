@@ -6,7 +6,6 @@
     "start": "node backend/server.js",
     "postinstall": "node deploy-commands.js"
   },
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
