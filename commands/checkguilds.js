@@ -2,7 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
 const AuthUser = require("../backend/models/authUser");
 const axios = require("axios");
 
-const STAFF_ROLE_ID = "YOUR_STAFF_ROLE_ID";
+const STAFF_ROLE_ID = "1368345392516698222";
 
 module.exports = {
   data: new SlashCommandBuilder()
