@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
-const AuthUser = require("../models/authUser");
+const AuthUser = require("../backend/models/authUser");
 const axios = require("axios");
 
 module.exports = {
