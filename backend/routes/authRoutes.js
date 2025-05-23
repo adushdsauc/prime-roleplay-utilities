@@ -19,7 +19,7 @@ const ALLOWED_GUILDS = [
   ];
 
 
-router.get("/login", (req, res) => {
+router.get("/api/auth/callback", async (req, res) => {
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     redirect_uri: REDIRECT_URI,
