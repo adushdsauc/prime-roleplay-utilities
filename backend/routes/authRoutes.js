@@ -21,7 +21,9 @@ const ALLOWED_GUILDS = [
 // Step 1: Send user to Discord OAuth2
 router.get("/login", (req, res) => {
   const isBypass = req.query.bypass === "true";
-  const finalRedirect = isBypass ? `${REDIRECT_URI}?bypass=true` : REDIRECT_URI;
+  const finalRedirect = isBypass
+    ? `${REDIRECT_URI}?bypass=true`
+    : REDIRECT_URI;
 
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
@@ -30,7 +32,7 @@ router.get("/login", (req, res) => {
     scope: "identify guilds"
   });
 
-  return res.redirect(`${DISCORD_API}/oauth2/authorize?${params.toString()}`);
+  res.redirect(`${DISCORD_API}/oauth2/authorize?${params.toString()}`);
 });
 
 // Step 2: Handle Discord OAuth2 callback
