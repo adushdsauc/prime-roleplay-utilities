@@ -7,53 +7,54 @@ const STAFF_ROLE_ID = "1368345392516698222";
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("checkguilds")
-    .setDescription("Check what guilds a user is in (OAuth required)")
+    .setDescription("Staff only: Check what guilds a user is in (via OAuth)")
     .addUserOption(option =>
       option.setName("user")
-        .setDescription("User to check")
+        .setDescription("Select the user to check")
         .setRequired(true)
     )
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild), // base limit
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+
   async execute(interaction) {
     const targetUser = interaction.options.getUser("user");
     const requester = interaction.member;
 
-    // ✅ Enforce staff role
+    // ✅ Staff role check
     if (!requester.roles.cache.has(STAFF_ROLE_ID)) {
       return interaction.reply({
-        content: "❌ You don’t have permission to use this command.",
+        content: "❌ You do not have permission to use this command.",
         ephemeral: true
       });
     }
 
+    // ✅ Lookup the target user in MongoDB
     const authUser = await AuthUser.findOne({ discordId: targetUser.id });
     if (!authUser || !authUser.accessToken) {
       return interaction.reply({
-        content: `❌ ${targetUser.tag} has not authenticated via OAuth.`,
+        content: `❌ ${targetUser.tag} has not authenticated via the bot.`,
         ephemeral: true
       });
     }
 
     try {
-      const guildRes = await axios.get("https://discord.com/api/users/@me/guilds", {
+      const response = await axios.get("https://discord.com/api/users/@me/guilds", {
         headers: {
           Authorization: `${authUser.tokenType} ${authUser.accessToken}`
         }
       });
 
-      const guilds = guildRes.data.map(g => `• ${g.name} (${g.id})`);
-      const output = guilds.length
-        ? guilds.join("\n")
-        : "No guilds returned.";
+      const guilds = response.data;
+      const lines = guilds.map(g => `• ${g.name} (${g.id})`);
+      const output = lines.length ? lines.join("\n") : "No guilds returned.";
 
       return interaction.reply({
-        content: `🧾 Guilds for **${targetUser.tag}**:\n\`\`\`\n${output}\n\`\`\``,
+        content: `📋 **Guilds for ${targetUser.tag}:**\n\`\`\`\n${output}\n\`\`\``,
         ephemeral: true
       });
     } catch (err) {
-      console.error("Guild fetch error:", err?.response?.data || err.message);
+      console.error("❌ Guild fetch error:", err?.response?.data || err.message);
       return interaction.reply({
-        content: "❌ Failed to fetch guilds. Their token may have expired.",
+        content: "❌ Could not fetch guilds. Their token may have expired or been revoked.",
         ephemeral: true
       });
     }
