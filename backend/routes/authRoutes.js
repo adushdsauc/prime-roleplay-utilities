@@ -6,14 +6,25 @@ const AuthUser = require("../models/authUser");
 
 const DISCORD_API = "https://discord.com/api";
 const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
-const ALLOWED_GUILDS = [ /* your guild IDs */ ];
+
+// Replace with your allowed guild IDs
+const ALLOWED_GUILDS = [
+  "1372312806107512894",
+  "1369495333574545559",
+  "1369029438351867964",
+  "945681941213089814",
+  "795657260726091838",
+  "229240178441584645",
+  "1369545344529993768",
+  "1368615880359153735"
+];
 
 router.get("/login", (req, res) => {
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     redirect_uri: REDIRECT_URI,
     response_type: "code",
-    scope: "identify guilds",
+    scope: "identify guilds"
   });
   res.redirect(`${DISCORD_API}/oauth2/authorize?${params.toString()}`);
 });
@@ -31,8 +42,7 @@ router.get("/callback", async (req, res) => {
       client_secret: CLIENT_SECRET,
       grant_type: "authorization_code",
       code,
-      redirect_uri: REDIRECT_URI,
-      scope: "identify guilds",
+      redirect_uri: REDIRECT_URI
     });
 
     const tokenRes = await axios.post(`${DISCORD_API}/oauth2/token`, data.toString(), {
@@ -68,7 +78,7 @@ router.get("/callback", async (req, res) => {
       { upsert: true }
     );
 
-    // Success: Show final confirmation page
+    // Final success screen
     res.send(`
       <html>
         <body style="font-family:sans-serif; text-align:center; padding:50px;">
@@ -78,7 +88,7 @@ router.get("/callback", async (req, res) => {
       </html>
     `);
   } catch (err) {
-    console.error("OAuth error:", err);
+    console.error("OAuth error:", err?.response?.data || err.message);
     res.send("An error occurred during authentication.");
   }
 });
