@@ -2,7 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
 const AuthUser = require("../backend/models/authUser");
 const axios = require("axios");
 
-const STAFF_ROLE_ID = "1368345392516698222"; // Your actual staff role ID
+const STAFF_ROLE_ID = "1368345392516698222";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -24,7 +24,7 @@ module.exports = {
       if (!requester?.roles?.cache?.has(STAFF_ROLE_ID)) {
         return interaction.reply({
           content: "❌ You do not have permission to use this command.",
-          flags: 64 // Replaces ephemeral: true
+          flags: 64
         });
       }
 
@@ -55,28 +55,24 @@ module.exports = {
         flags: 64
       });
 
-} catch (err) {
-  console.error("❌ /checkguilds error:", {
-    message: err.message,
-    status: err?.response?.status,
-    data: err?.response?.data,
-    stack: err.stack
-  });
+    } catch (err) {
+      console.error("❌ /checkguilds error:", {
+        message: err.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        stack: err.stack
+      });
 
-  // Handle expired token
-  if (err?.response?.status === 401) {
-    return interaction.reply({
-      content: `❌ Token expired or revoked for <@${targetUser.id}>. Ask them to run \`/auth\` to reauthenticate.`,
-      flags: 64
-    });
-  }
+      if (err?.response?.status === 401) {
+        return interaction.reply({
+          content: `❌ Token expired or revoked for <@${interaction.options.getUser("user").id}>. Ask them to run \`/auth\` to reauthenticate.`,
+          flags: 64
+        });
+      }
 
-  return interaction.reply({
-    content: "❌ Something went wrong. Check the bot logs for details.",
-    flags: 64
-  });
-}
-
+      return interaction.reply({
+        content: "❌ Something went wrong. Check the bot logs for details.",
+        flags: 64
       });
     }
   }
