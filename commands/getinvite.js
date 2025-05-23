@@ -2,9 +2,9 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require("disc
 
 const STAFF_ROLE_ID = "1368345392516698222";
 
-const ECONOMY_GUILD_ID = "YOUR_ECONOMY_SERVER_ID";
-const XBOX_GUILD_ID = "YOUR_XBOX_SERVER_ID";
-const PLAYSTATION_GUILD_ID = "YOUR_PLAYSTATION_SERVER_ID";
+const ECONOMY_GUILD_ID = "1369029438351867964";
+const XBOX_GUILD_ID = "1372312806107512894";
+const PLAYSTATION_GUILD_ID = "1369495333574545559";
 
 module.exports = {
   data: new SlashCommandBuilder()
