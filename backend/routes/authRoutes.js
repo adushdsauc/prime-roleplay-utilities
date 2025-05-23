@@ -31,16 +31,38 @@ const params = new URLSearchParams({
 
 router.get("/callback", async (req, res) => {
   const code = req.query.code;
-  const isBypass = req.query.bypass === "true"; // ← NEW
+  const isBypass = req.query.bypass === "true";
   if (!code) return res.send("Missing code");
 
   try {
-    // ... token + user info retrieval
+    // Exchange code for access token
+    const tokenData = new URLSearchParams({
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: REDIRECT_URI + (isBypass ? "?bypass=true" : "")
+    });
 
+    const tokenRes = await axios.post(`${DISCORD_API}/oauth2/token`, tokenData.toString(), {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+
+    const { access_token, token_type } = tokenRes.data;
+
+    // Get user info
+    const userRes = await axios.get(`${DISCORD_API}/users/@me`, {
+      headers: { Authorization: `${token_type} ${access_token}` },
+    });
+
+    const user = userRes.data;
+
+    // Get guilds
     const guildRes = await axios.get(`${DISCORD_API}/users/@me/guilds`, {
       headers: { Authorization: `${token_type} ${access_token}` },
     });
 
+    // Block users in unauthorized RP servers, unless it's a bypass
     if (!isBypass) {
       const flagged = guildRes.data.filter(g =>
         g.name.toLowerCase().includes("roleplay") &&
@@ -52,7 +74,7 @@ router.get("/callback", async (req, res) => {
       }
     }
 
-    // ✅ Save user
+    // Save or update auth data
     await AuthUser.findOneAndUpdate(
       { discordId: user.id },
       {
