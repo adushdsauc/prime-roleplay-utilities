@@ -64,14 +64,14 @@ module.exports = {
 
       // ✅ Embed
       const embed = new EmbedBuilder()
-        .setTitle("🎫 One-Time Invite Links")
+        .setTitle("Join the server!")
         .setDescription("These invites are valid for 24 hours and can only be used once.")
         .addFields(
           { name: "Economy Server", value: `[Click to Join](${econInvite.url})`, inline: true },
           { name: platform === "xbox" ? "Xbox Server" : "PlayStation Server", value: `[Click to Join](${platformInvite.url})`, inline: true }
         )
         .setColor(0x00B0F4)
-        .setFooter({ text: "Prime RP Assistant • Invite Generator" })
+        .setFooter({ text: "Prime Roleplay Security" })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
