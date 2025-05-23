@@ -1,4 +1,3 @@
-// backend/routes/authRoutes.js
 const express = require("express");
 const axios = require("axios");
 const router = express.Router();
@@ -7,30 +6,23 @@ const AuthUser = require("../models/authUser");
 
 const DISCORD_API = "https://discord.com/api";
 const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
-const ALLOWED_GUILDS = [
-    "1372312806107512894",
-    "1369495333574545559",
-    "1369029438351867964",
-    "945681941213089814",
-    "795657260726091838",
-    "229240178441584645",
-    "1369545344529993768",
-    "1368615880359153735"
-  ];
+const ALLOWED_GUILDS = [ /* your guild IDs */ ];
 
-
-router.get("/api/auth/callback", async (req, res) => {
+router.get("/login", (req, res) => {
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     redirect_uri: REDIRECT_URI,
     response_type: "code",
     scope: "identify guilds",
   });
-  return res.redirect(`${DISCORD_API}/oauth2/authorize?${params.toString()}`);
+  res.redirect(`${DISCORD_API}/oauth2/authorize?${params.toString()}`);
 });
 
 router.get("/callback", async (req, res) => {
-  const code = req.query.code;
+  console.log("↩️ /auth/callback query =", req.query);
+  const { code, error } = req.query;
+
+  if (error) return res.send(`OAuth error: ${error}`);
   if (!code) return res.send("Missing code");
 
   try {
@@ -60,22 +52,13 @@ router.get("/callback", async (req, res) => {
 
     const user = userRes.data;
     const userGuilds = guildRes.data.map(g => g.id);
-    console.log("🔍 User is in these guilds:", userGuilds);
-    const allowedIds = new Set(ALLOWED_GUILDS);
-    const flagged = [];
-    
-    for (const guild of guildRes.data) {
-      const name = guild.name.toLowerCase();
-      const isRP = name.includes("roleplay");
-      const isAllowed = allowedIds.has(guild.id);
-    
-      if (isRP && !isAllowed) {
-        flagged.push({ id: guild.id, name: guild.name });
-      }
-    }
-    
+
+    const flagged = guildRes.data.filter(g => {
+      const name = g.name.toLowerCase();
+      return name.includes("roleplay") && !ALLOWED_GUILDS.includes(g.id);
+    });
+
     if (flagged.length > 0) {
-      console.log("❌ Blocked for being in other RP servers:", flagged);
       return res.send("❌ You are a member of other roleplay servers. Access denied.");
     }
 
@@ -85,25 +68,15 @@ router.get("/callback", async (req, res) => {
       { upsert: true }
     );
 
-// Set a temporary cookie so you know this user completed auth (optional)
-res.cookie("discord_id", user.id, {
-  maxAge: 300000, // 5 minutes
-  httpOnly: false,
-  secure: true,
-  sameSite: "Lax",
-});
-
-// Serve a success HTML page directly — this breaks the loop.
-res.send(`
-  <html>
-    <head><title>Authenticated</title></head>
-    <body style="font-family: sans-serif; text-align: center; padding: 60px;">
-      <h2>✅ You’ve been authenticated.</h2>
-      <p>You will be invited or processed shortly. You may now close this tab.</p>
-    </body>
-  </html>
-`);
-
+    // Success: Show final confirmation page
+    res.send(`
+      <html>
+        <body style="font-family:sans-serif; text-align:center; padding:50px;">
+          <h1>✅ Authentication Complete</h1>
+          <p>You will be invited shortly. You may now close this tab.</p>
+        </body>
+      </html>
+    `);
   } catch (err) {
     console.error("OAuth error:", err);
     res.send("An error occurred during authentication.");
