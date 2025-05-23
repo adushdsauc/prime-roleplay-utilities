@@ -7,28 +7,32 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Basic Middleware
+// Middleware
 app.use(express.json());
 app.use(cors());
 app.use(session({
   secret: "prime-session-secret",
   resave: false,
   saveUninitialized: true,
+  cookie: {
+    secure: true,
+    sameSite: "lax",
+  },
 }));
 
 // Routes
 const authRoutes = require("./routes/authRoutes");
 app.use("/auth", authRoutes);
 
-// MongoDB Connection
+// MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
   .catch(err => console.error("❌ MongoDB error:", err));
 
-// Start Express Server
+// Start server
 app.listen(PORT, () => {
   console.log(`🌐 Server + Bot live at http://localhost:${PORT}`);
 });
 
-// 🔁 Launch the bot
+// Launch the bot
 require("../index.js");
