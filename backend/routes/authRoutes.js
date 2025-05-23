@@ -85,16 +85,25 @@ router.get("/callback", async (req, res) => {
       { upsert: true }
     );
 
+// Set a temporary cookie so you know this user completed auth (optional)
+res.cookie("discord_id", user.id, {
+  maxAge: 300000, // 5 minutes
+  httpOnly: false,
+  secure: true,
+  sameSite: "Lax",
+});
+
+// Serve a success HTML page directly — this breaks the loop.
 res.send(`
   <html>
-    <head><title>Auth Complete</title></head>
-    <body style="font-family:sans-serif; text-align:center; padding:50px;">
-      <h1>✅ Authentication Complete</h1>
-      <p>You will be invited to Prime Roleplay shortly.</p>
-      <p>You can now close this window.</p>
+    <head><title>Authenticated</title></head>
+    <body style="font-family: sans-serif; text-align: center; padding: 60px;">
+      <h2>✅ You’ve been authenticated.</h2>
+      <p>You will be invited or processed shortly. You may now close this tab.</p>
     </body>
   </html>
 `);
+
   } catch (err) {
     console.error("OAuth error:", err);
     res.send("An error occurred during authentication.");
