@@ -90,6 +90,10 @@ router.get("/callback", async (req, res) => {
       },
       { upsert: true }
     );
+    
+    const saved = await AuthUser.findOne({ discordId: user.id });
+console.log("✅ AuthUser saved:", saved);
+
 
     return res.send(`
       <html>
