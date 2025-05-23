@@ -55,11 +55,28 @@ module.exports = {
         flags: 64
       });
 
-    } catch (err) {
-      console.error("❌ /checkguilds error:", err?.response?.data || err.message);
-      return interaction.reply({
-        content: "❌ Something went wrong. Check the bot logs for details.",
-        flags: 64
+} catch (err) {
+  console.error("❌ /checkguilds error:", {
+    message: err.message,
+    status: err?.response?.status,
+    data: err?.response?.data,
+    stack: err.stack
+  });
+
+  // Handle expired token
+  if (err?.response?.status === 401) {
+    return interaction.reply({
+      content: `❌ Token expired or revoked for <@${targetUser.id}>. Ask them to run \`/auth\` to reauthenticate.`,
+      flags: 64
+    });
+  }
+
+  return interaction.reply({
+    content: "❌ Something went wrong. Check the bot logs for details.",
+    flags: 64
+  });
+}
+
       });
     }
   }
