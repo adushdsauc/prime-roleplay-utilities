@@ -164,7 +164,7 @@ if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
   const loginEmbed = new EmbedBuilder()
     .setTitle("🎉 You've been accepted to Prime Roleplay!")
     .setDescription("Please log in with Discord to continue. Once verified, you'll receive your invite links.")
-    .addFields({ name: "Login", value: `[Click here to verify](https://prime-roleplay-utilities-production.up.railway.app/callback
+    .addFields({ name: "Login", value: `[Click here to verify](https://prime-roleplay-utilities-production.up.railway.app/auth/login
 )` })
     .setColor(0x2ecc71);
 
