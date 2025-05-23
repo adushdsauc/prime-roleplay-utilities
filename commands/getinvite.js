@@ -1,11 +1,10 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require("discord.js");
 
 const STAFF_ROLE_ID = "1368345392516698222";
 
-// Replace these with your actual server IDs
-const ECONOMY_GUILD_ID = "1369029438351867964";
-const XBOX_GUILD_ID = "1372312806107512894";
-const PLAYSTATION_GUILD_ID = "1369495333574545559";
+const ECONOMY_GUILD_ID = "YOUR_ECONOMY_SERVER_ID";
+const XBOX_GUILD_ID = "YOUR_XBOX_SERVER_ID";
+const PLAYSTATION_GUILD_ID = "YOUR_PLAYSTATION_SERVER_ID";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -32,15 +31,14 @@ module.exports = {
     }
 
     const platform = interaction.options.getString("platform");
-
-    // Pick the platform guild ID
     const platformGuildId = platform === "xbox" ? XBOX_GUILD_ID : PLAYSTATION_GUILD_ID;
 
     try {
-      // Fetch Economy guild + first available channel
+      // Economy invite
       const econGuild = await interaction.client.guilds.fetch(ECONOMY_GUILD_ID);
-      const econChannel = econGuild.systemChannel || econGuild.channels.cache.find(ch => ch.isTextBased() && ch.permissionsFor(econGuild.members.me).has("CreateInstantInvite"));
-
+      const econChannel = econGuild.systemChannel || econGuild.channels.cache.find(ch =>
+        ch.isTextBased() && ch.permissionsFor(econGuild.members.me).has("CreateInstantInvite")
+      );
       if (!econChannel) throw new Error("No valid Economy channel found");
 
       const econInvite = await econChannel.createInvite({
@@ -50,10 +48,11 @@ module.exports = {
         reason: `Staff-generated Economy invite via /getinvite`
       });
 
-      // Fetch Platform guild + first valid channel
+      // Platform invite
       const platformGuild = await interaction.client.guilds.fetch(platformGuildId);
-      const platformChannel = platformGuild.systemChannel || platformGuild.channels.cache.find(ch => ch.isTextBased() && ch.permissionsFor(platformGuild.members.me).has("CreateInstantInvite"));
-
+      const platformChannel = platformGuild.systemChannel || platformGuild.channels.cache.find(ch =>
+        ch.isTextBased() && ch.permissionsFor(platformGuild.members.me).has("CreateInstantInvite")
+      );
       if (!platformChannel) throw new Error("No valid platform channel found");
 
       const platformInvite = await platformChannel.createInvite({
@@ -63,15 +62,16 @@ module.exports = {
         reason: `Staff-generated ${platform} invite via /getinvite`
       });
 
- const embed = new EmbedBuilder()
-        .setTitle("Invitation")
+      // ✅ Embed
+      const embed = new EmbedBuilder()
+        .setTitle("🎫 One-Time Invite Links")
         .setDescription("These invites are valid for 24 hours and can only be used once.")
         .addFields(
           { name: "Economy Server", value: `[Click to Join](${econInvite.url})`, inline: true },
           { name: platform === "xbox" ? "Xbox Server" : "PlayStation Server", value: `[Click to Join](${platformInvite.url})`, inline: true }
         )
         .setColor(0x00B0F4)
-        .setFooter({ text: "Prime Roleplay Security" })
+        .setFooter({ text: "Prime RP Assistant • Invite Generator" })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
@@ -79,7 +79,7 @@ module.exports = {
     } catch (err) {
       console.error("❌ /getinvite error:", err);
       return interaction.reply({
-        content: "❌ Could not create invites. Ensure the bot has permission and at least one text channel is accessible in each server."
+        content: "❌ Could not create invites. Ensure the bot has permissions and a valid channel exists in each server."
       });
     }
   }
