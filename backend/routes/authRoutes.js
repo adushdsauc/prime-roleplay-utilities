@@ -72,11 +72,17 @@ router.get("/callback", async (req, res) => {
       return res.send("❌ You are a member of other roleplay servers. Access denied.");
     }
 
-    await AuthUser.findOneAndUpdate(
-      { discordId: user.id },
-      { discordId: user.id, username: user.username },
-      { upsert: true }
-    );
+await AuthUser.findOneAndUpdate(
+  { discordId: user.id },
+  {
+    discordId: user.id,
+    username: user.username,
+    accessToken: access_token,      // ✅ Store for later use
+    tokenType: token_type           // ✅ Store for later use
+  },
+  { upsert: true }
+);
+
 
     // Final success screen
     res.send(`
