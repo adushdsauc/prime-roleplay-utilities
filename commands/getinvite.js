@@ -63,9 +63,18 @@ module.exports = {
         reason: `Staff-generated ${platform} invite via /getinvite`
       });
 
-      return interaction.reply({
-        content: `✅ 1-use, 24-hour invites:\n• Economy: ${econInvite.url}\n• ${platform.charAt(0).toUpperCase() + platform.slice(1)}: ${platformInvite.url}`
-      });
+ const embed = new EmbedBuilder()
+        .setTitle("Invitation")
+        .setDescription("These invites are valid for 24 hours and can only be used once.")
+        .addFields(
+          { name: "Economy Server", value: `[Click to Join](${econInvite.url})`, inline: true },
+          { name: platform === "xbox" ? "Xbox Server" : "PlayStation Server", value: `[Click to Join](${platformInvite.url})`, inline: true }
+        )
+        .setColor(0x00B0F4)
+        .setFooter({ text: "Prime Roleplay Security" })
+        .setTimestamp();
+
+      return interaction.reply({ embeds: [embed] });
 
     } catch (err) {
       console.error("❌ /getinvite error:", err);
