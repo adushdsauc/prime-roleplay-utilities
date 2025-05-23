@@ -1,28 +1,32 @@
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
+
+const STAFF_ROLE_ID = "1368345392516698222"; // replace with your actual staff role ID
+const AUTH_URL = "https://prime-roleplay-utilities-production.up.railway.app/auth/login";
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("auth")
-    .setDescription("Authenticate or reauthenticate through the bot (OAuth)"),
+    .setDescription("Send the authentication link (staff only)")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
   async execute(interaction) {
-    const loginUrl = `https://prime-roleplay-utilities-production.up.railway.app/auth/login`;
+    const requester = interaction.member;
 
-    try {
-      await interaction.user.send({
-        content: `🔐 Click the link below to authenticate:\n${loginUrl}`
-      });
-
-      await interaction.reply({
-        content: "✅ I’ve sent you a DM with the authentication link.",
-        ephemeral: true
-      });
-    } catch (err) {
-      console.error("❌ Failed to send DM:", err.message);
-      await interaction.reply({
-        content: `🔗 Here’s your authentication link:\n${loginUrl}`,
+    // ✅ Staff role check
+    if (!requester.roles.cache.has(STAFF_ROLE_ID)) {
+      return interaction.reply({
+        content: "❌ You do not have permission to use this command.",
         ephemeral: true
       });
     }
+
+    const embed = new EmbedBuilder()
+      .setTitle("🔐 Authenticate with Prime Roleplay")
+      .setDescription(`[Click here to authenticate](${AUTH_URL}) through Discord.\nThis verifies your identity and allows you to access roleplay tools.`)
+      .setColor(0x00B0F4)
+      .setFooter({ text: "Prime RP Assistant • OAuth Verification" })
+      .setTimestamp();
+
+    await interaction.reply({ embeds: [embed] });
   }
 };
