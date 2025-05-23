@@ -21,15 +21,13 @@ const ALLOWED_GUILDS = [
 // Step 1: Send user to Discord OAuth2
 router.get("/login", (req, res) => {
   const isBypass = req.query.bypass === "true";
-  const finalRedirect = isBypass
-    ? `${REDIRECT_URI}?bypass=true`
-    : REDIRECT_URI;
 
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
-    redirect_uri: finalRedirect,
+    redirect_uri: REDIRECT_URI, // Must match exactly what's in Discord Dev Portal
     response_type: "code",
-    scope: "identify guilds"
+    scope: "identify guilds",
+    state: isBypass ? "bypass" : "standard"
   });
 
   res.redirect(`${DISCORD_API}/oauth2/authorize?${params.toString()}`);
@@ -38,7 +36,7 @@ router.get("/login", (req, res) => {
 // Step 2: Handle Discord OAuth2 callback
 router.get("/callback", async (req, res) => {
   const code = req.query.code;
-  const isBypass = req.query.bypass === "true";
+  const isBypass = req.query.state === "bypass";
   if (!code) return res.send("❌ Missing code.");
 
   try {
@@ -48,7 +46,7 @@ router.get("/callback", async (req, res) => {
       client_secret: CLIENT_SECRET,
       grant_type: "authorization_code",
       code,
-      redirect_uri: `${REDIRECT_URI}${isBypass ? "?bypass=true" : ""}`
+      redirect_uri: REDIRECT_URI
     });
 
     const tokenRes = await axios.post(`${DISCORD_API}/oauth2/token`, data.toString(), {
