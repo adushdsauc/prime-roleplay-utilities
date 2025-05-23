@@ -85,7 +85,16 @@ router.get("/callback", async (req, res) => {
       { upsert: true }
     );
 
-res.redirect("https://prime-roleplay-utilities-production.up.railway.app/success"); // Or your actual frontend route
+res.send(`
+  <html>
+    <head><title>Auth Complete</title></head>
+    <body style="font-family:sans-serif; text-align:center; padding:50px;">
+      <h1>✅ Authentication Complete</h1>
+      <p>You will be invited to Prime Roleplay shortly.</p>
+      <p>You can now close this window.</p>
+    </body>
+  </html>
+`);
   } catch (err) {
     console.error("OAuth error:", err);
     res.send("An error occurred during authentication.");
