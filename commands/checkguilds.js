@@ -68,7 +68,6 @@ module.exports = {
       return interaction.reply({
         content: `📋 Fetched ${guilds.length} guilds for **${targetUser.tag}**:`,
         embeds: chunks.slice(0, 10), // max 10 embeds per message
-        flags: 64
       });
 
     } catch (err) {
