@@ -2,7 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
 const AuthUser = require("../backend/models/authUser");
 const axios = require("axios");
 
-const STAFF_ROLE_ID = "1368345392516698222";
+const STAFF_ROLE_ID = "1368345392516698222"; // Your actual staff role ID
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -24,7 +24,7 @@ module.exports = {
       if (!requester?.roles?.cache?.has(STAFF_ROLE_ID)) {
         return interaction.reply({
           content: "❌ You do not have permission to use this command.",
-          ephemeral: true
+          flags: 64 // Replaces ephemeral: true
         });
       }
 
@@ -33,7 +33,7 @@ module.exports = {
       if (!authUser || !authUser.accessToken) {
         return interaction.reply({
           content: `❌ ${targetUser.tag} has not authenticated through the bot.`,
-          ephemeral: true
+          flags: 64
         });
       }
 
@@ -52,14 +52,14 @@ module.exports = {
 
       return interaction.reply({
         content: `📋 Guilds for **${targetUser.tag}**:\n\`\`\`\n${output}\n\`\`\``,
-        ephemeral: true
+        flags: 64
       });
 
     } catch (err) {
       console.error("❌ /checkguilds error:", err?.response?.data || err.message);
       return interaction.reply({
         content: "❌ Something went wrong. Check the bot logs for details.",
-        ephemeral: true
+        flags: 64
       });
     }
   }
