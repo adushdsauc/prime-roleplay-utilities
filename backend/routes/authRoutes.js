@@ -18,28 +18,35 @@ const ALLOWED_GUILDS = [
   "1368615880359153735"
 ];
 
+// Step 1: Send user to Discord OAuth2
 router.get("/login", (req, res) => {
+  const isBypass = req.query.bypass === "true";
+  const finalRedirect = isBypass ? `${REDIRECT_URI}?bypass=true` : REDIRECT_URI;
+
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
-    redirect_uri: REDIRECT_URI + (req.query.bypass ? "?bypass=true" : ""),
+    redirect_uri: finalRedirect,
     response_type: "code",
     scope: "identify guilds"
   });
+
   return res.redirect(`${DISCORD_API}/oauth2/authorize?${params.toString()}`);
 });
 
+// Step 2: Handle Discord OAuth2 callback
 router.get("/callback", async (req, res) => {
   const code = req.query.code;
   const isBypass = req.query.bypass === "true";
-  if (!code) return res.send("Missing code");
+  if (!code) return res.send("❌ Missing code.");
 
   try {
+    // Exchange code for access token
     const data = new URLSearchParams({
       client_id: CLIENT_ID,
       client_secret: CLIENT_SECRET,
       grant_type: "authorization_code",
       code,
-      redirect_uri: REDIRECT_URI + (isBypass ? "?bypass=true" : "")
+      redirect_uri: `${REDIRECT_URI}${isBypass ? "?bypass=true" : ""}`
     });
 
     const tokenRes = await axios.post(`${DISCORD_API}/oauth2/token`, data.toString(), {
@@ -48,16 +55,19 @@ router.get("/callback", async (req, res) => {
 
     const { access_token, token_type } = tokenRes.data;
 
+    // Get user info
     const userRes = await axios.get(`${DISCORD_API}/users/@me`, {
       headers: { Authorization: `${token_type} ${access_token}` }
     });
 
     const user = userRes.data;
 
+    // Get user guilds
     const guildRes = await axios.get(`${DISCORD_API}/users/@me/guilds`, {
       headers: { Authorization: `${token_type} ${access_token}` }
     });
 
+    // Filter for unauthorized RP guilds
     if (!isBypass) {
       const flagged = guildRes.data.filter(g =>
         g.name.toLowerCase().includes("roleplay") &&
@@ -69,6 +79,7 @@ router.get("/callback", async (req, res) => {
       }
     }
 
+    // Save to DB
     await AuthUser.findOneAndUpdate(
       { discordId: user.id },
       {
@@ -82,9 +93,12 @@ router.get("/callback", async (req, res) => {
 
     return res.send(`
       <html>
-        <body style="font-family:sans-serif; text-align:center; padding:50px;">
-          <h1>✅ Authentication Complete</h1>
-          <p>${isBypass ? "Staff will review your request shortly." : "You are now verified."}</p>
+        <head><title>Authentication Complete</title></head>
+        <body style="font-family:sans-serif; text-align:center; padding:40px;">
+          <h1 style="color:green;">✅ Authentication Complete</h1>
+          <p>${isBypass
+            ? "Staff will review your request shortly. You may now close this tab."
+            : "You are now verified. You may now close this tab."}</p>
         </body>
       </html>
     `);
