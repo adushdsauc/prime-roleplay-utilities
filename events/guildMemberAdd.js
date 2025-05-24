@@ -31,6 +31,7 @@ const ROLE_IDS = {
 };
 
 let rookieCounter = 1250;
+
 function generateCallsign(department) {
   const prefix = department === "PSO" ? "D" : department === "SAFR" ? "E" : "C";
   return `${prefix}-${rookieCounter++}`;
@@ -56,7 +57,10 @@ module.exports = {
 
     const guildId = member.guild.id;
     const config = ROLE_IDS[guildId];
-    if (!config) return;
+    if (!config) {
+      console.warn("❌ No ROLE_IDS config for this guild:", guildId);
+      return;
+    }
 
     // Invite validation
     try {
@@ -94,22 +98,39 @@ module.exports = {
     // Retrieve department from database
     let department = "Civilian";
     const accepted = await AcceptedUser.findOne({ discordId: member.id });
+    console.log("🔍 AcceptedUser record:", accepted);
+
     if (accepted) {
       department = accepted.department;
       await AcceptedUser.deleteOne({ discordId: member.id });
     }
 
+    console.log("📌 Department from DB:", department);
+    console.log("📌 Role config:", config);
+    console.log("📌 Roles to assign:", [...(config.always || []), ...(config[department] || [])]);
+
     // Assign roles
     const roleIds = [...(config.always || []), ...(config[department] || [])];
     for (const roleId of roleIds) {
       const role = member.guild.roles.cache.get(roleId);
-      if (role) await member.roles.add(role).catch(console.error);
+      if (role) {
+        await member.roles.add(role).catch(err => {
+          console.warn(`❌ Failed to assign role ${roleId} to ${member.user.tag}:`, err.message);
+        });
+      }
     }
 
     // Generate callsign and update sheet
     const callsign = generateCallsign(department);
+    console.log("🪪 Callsign generated:", callsign);
+
     const sheetId = guildId === XBOX_GUILD_ID ? XBOX_SHEET_ID : PLAYSTATION_SHEET_ID;
-    await updateSheet(sheetId, member, department, callsign);
+    try {
+      console.log("📄 Updating sheet for:", member.user.tag);
+      await updateSheet(sheetId, member, department, callsign);
+    } catch (err) {
+      console.error("❌ Failed to update Google Sheet:", err.message);
+    }
 
     // Set nickname: Callsign | Username
     const baseName = member.user.username;
@@ -117,6 +138,7 @@ module.exports = {
     await member.setNickname(nickname).catch(err => {
       console.warn(`❌ Failed to set nickname for ${member.user.tag}:`, err.message);
     });
+    console.log("✏️ Nickname set attempt:", nickname);
 
     // Log join embed
     const logChannelId = LOG_CHANNELS[guildId];
@@ -132,6 +154,7 @@ module.exports = {
         .setColor(0x00b0f4)
         .setTimestamp();
       logChannel.send({ embeds: [embed] }).catch(console.error);
+      console.log("📨 Log channel send attempt complete");
     }
 
     console.log(`✅ ${member.user.tag} joined ${department}, callsign ${callsign}`);
