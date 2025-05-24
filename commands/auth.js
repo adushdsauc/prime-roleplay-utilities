@@ -1,7 +1,8 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
 
-const STAFF_ROLE_ID = "1375605232226140300"; // Your staff role ID
+const STAFF_ROLE_ID = "1375605232226140300";
 const AUTH_URL = "https://prime-roleplay-utilities-production.up.railway.app/auth/login?bypass=true";
+const LOG_CHANNEL_ID = "1375641960651689984"; // ⬅️ Replace this with your real log channel ID
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -27,6 +28,19 @@ module.exports = {
       .setFooter({ text: "Prime RP Assistant • OAuth Verification" })
       .setTimestamp();
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply({ embeds: [embed], ephemeral: true });
+
+    // ✅ Send verification log to staff channel
+    const logChannel = await interaction.client.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
+    if (logChannel && logChannel.isTextBased()) {
+      const logEmbed = new EmbedBuilder()
+        .setTitle("📨 Auth Link Sent")
+        .setDescription(`<@${requester.id}> used the \`/auth\` command.`)
+        .addFields({ name: "User", value: `${requester.user.tag}`, inline: true })
+        .setColor(0x00B0F4)
+        .setTimestamp();
+
+      await logChannel.send({ embeds: [logEmbed] });
+    }
   }
 };
