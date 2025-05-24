@@ -94,7 +94,6 @@ const QUESTIONS = {
   ]
 };
 
-client.on("guildMemberAdd", async (member) => {
   try {
     const invites = await member.guild.invites.fetch().catch(() => null);
     if (!invites) return;
