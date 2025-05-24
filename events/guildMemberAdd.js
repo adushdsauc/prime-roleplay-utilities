@@ -3,6 +3,7 @@ const { GoogleSpreadsheet } = require("google-spreadsheet");
 const creds = JSON.parse(process.env.GOOGLE_SHEETS_CREDENTIALS);
 const AcceptedUser = require("../models/AcceptedUser");
 const Invite = require("../models/Invite");
+const Callsign = require("../models/Callsign");
 
 const XBOX_GUILD_ID = "1372312806107512894";
 const PLAYSTATION_GUILD_ID = "1369495333574545559";
@@ -30,11 +31,25 @@ const ROLE_IDS = {
   }
 };
 
-let rookieCounter = 1250;
+async function generateCallsign(discordId, department) {
+  const ranges = {
+    Civilian: { start: 1250, prefix: "Civ" },
+    PSO: { start: 1251, end: 2000, prefix: "C" },
+    SAFR: { start: 1, end: 100, prefix: "FF-R" },
+  };
+  const range = ranges[department];
+  if (!range) throw new Error("Unknown department");
 
-function generateCallsign(department) {
-  const prefix = department === "PSO" ? "D" : department === "SAFR" ? "E" : "C";
-  return `${prefix}-${rookieCounter++}`;
+  const existing = await Callsign.find({ department });
+  const used = new Set(existing.map(c => c.number));
+  let number = range.start;
+  const max = range.end || Infinity;
+
+  while (used.has(number) && number <= max) number++;
+  if (number > max) throw new Error("No available callsigns");
+
+  await Callsign.create({ discordId, department, number });
+  return `${range.prefix}-${number}`;
 }
 
 async function updateSheet(docId, member, department, callsign) {
@@ -62,7 +77,6 @@ module.exports = {
       return;
     }
 
-    // Invite validation (non-blocking if not found)
     try {
       const invites = await member.guild.invites.fetch().catch(() => null);
       if (invites) {
@@ -78,7 +92,6 @@ module.exports = {
                 content: `<@${member.id}> was **kicked** for using an unauthorized invite.\nInvite code: \`${used.code}\`\nIntended for: <@${inviteData.userId}>`
               });
             }
-
             await member.send("🚫 This invite wasn’t meant for you. You’ve been removed from the server.");
             await member.kick("Unauthorized invite use");
             return;
@@ -92,7 +105,6 @@ module.exports = {
       console.error("❌ Error in invite validation:", err);
     }
 
-    // Department and record check
     let department = "Civilian";
     const accepted = await AcceptedUser.findOne({ discordId: member.id });
     console.log("🔍 AcceptedUser record:", accepted);
@@ -102,11 +114,6 @@ module.exports = {
       await AcceptedUser.deleteOne({ discordId: member.id });
     }
 
-    console.log("📌 Department from DB:", department);
-    console.log("📌 Role config:", config);
-    console.log("📌 Roles to assign:", [...(config.always || []), ...(config[department] || [])]);
-
-    // Role assignment
     const roleIds = [...(config.always || []), ...(config[department] || [])];
     for (const roleId of roleIds) {
       const role = member.guild.roles.cache.get(roleId);
@@ -117,9 +124,14 @@ module.exports = {
       }
     }
 
-    // Callsign + Sheet
-    const callsign = generateCallsign(department);
-    console.log("🪪 Callsign generated:", callsign);
+    let callsign;
+    try {
+      callsign = await generateCallsign(member.id, department);
+      console.log("🪪 Callsign generated:", callsign);
+    } catch (err) {
+      console.error("❌ Failed to generate callsign:", err);
+      callsign = "Pending";
+    }
 
     const sheetId = guildId === XBOX_GUILD_ID ? XBOX_SHEET_ID : PLAYSTATION_SHEET_ID;
     try {
@@ -129,15 +141,13 @@ module.exports = {
       console.error("❌ Failed to update Google Sheet:", err.message);
     }
 
-    // Nickname
     const baseName = member.user.username;
     const nickname = `${callsign} | ${baseName}`;
     await member.setNickname(nickname).catch(err => {
-      console.warn(`❌ Failed to set nickname for ${member.user.tag}:`, err.message);
+      console.warn(`❌ Failed to set nickname for ${member.user.tag}:", err.message);
     });
     console.log("✏️ Nickname set attempt:", nickname);
 
-    // Log embed
     const logChannelId = LOG_CHANNELS[guildId];
     const logChannel = member.guild.channels.cache.get(logChannelId);
     if (logChannel) {
