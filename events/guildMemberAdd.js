@@ -62,7 +62,7 @@ module.exports = {
       return;
     }
 
-    // Invite validation
+    // Invite validation (non-blocking if not found)
     try {
       const invites = await member.guild.invites.fetch().catch(() => null);
       if (invites) {
@@ -71,10 +71,7 @@ module.exports = {
           const inviteData = await Invite.findOne({ code: used.code });
           if (!inviteData) {
             console.log("⚠️ Invite not tracked in DB:", used.code);
-            return;
-          }
-
-          if (inviteData.userId !== member.id) {
+          } else if (inviteData.userId !== member.id) {
             const logChannel = member.guild.channels.cache.get(LOG_CHANNELS[guildId]);
             if (logChannel?.isTextBased()) {
               logChannel.send({
@@ -85,17 +82,17 @@ module.exports = {
             await member.send("🚫 This invite wasn’t meant for you. You’ve been removed from the server.");
             await member.kick("Unauthorized invite use");
             return;
+          } else {
+            inviteData.used = true;
+            await inviteData.save();
           }
-
-          inviteData.used = true;
-          await inviteData.save();
         }
       }
     } catch (err) {
       console.error("❌ Error in invite validation:", err);
     }
 
-    // Retrieve department from database
+    // Department and record check
     let department = "Civilian";
     const accepted = await AcceptedUser.findOne({ discordId: member.id });
     console.log("🔍 AcceptedUser record:", accepted);
@@ -109,7 +106,7 @@ module.exports = {
     console.log("📌 Role config:", config);
     console.log("📌 Roles to assign:", [...(config.always || []), ...(config[department] || [])]);
 
-    // Assign roles
+    // Role assignment
     const roleIds = [...(config.always || []), ...(config[department] || [])];
     for (const roleId of roleIds) {
       const role = member.guild.roles.cache.get(roleId);
@@ -120,7 +117,7 @@ module.exports = {
       }
     }
 
-    // Generate callsign and update sheet
+    // Callsign + Sheet
     const callsign = generateCallsign(department);
     console.log("🪪 Callsign generated:", callsign);
 
@@ -132,7 +129,7 @@ module.exports = {
       console.error("❌ Failed to update Google Sheet:", err.message);
     }
 
-    // Set nickname: Callsign | Username
+    // Nickname
     const baseName = member.user.username;
     const nickname = `${callsign} | ${baseName}`;
     await member.setNickname(nickname).catch(err => {
@@ -140,7 +137,7 @@ module.exports = {
     });
     console.log("✏️ Nickname set attempt:", nickname);
 
-    // Log join embed
+    // Log embed
     const logChannelId = LOG_CHANNELS[guildId];
     const logChannel = member.guild.channels.cache.get(logChannelId);
     if (logChannel) {
