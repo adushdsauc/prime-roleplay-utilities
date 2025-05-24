@@ -126,10 +126,16 @@ console.log("✅ AuthUser saved:", saved);
       </html>
     `);
 
-  } catch (err) {
-    console.error("OAuth error:", err?.response?.data || err.message);
-    return res.send("❌ An error occurred during authentication.");
-  }
+} catch (err) {
+  console.error("OAuth error:", {
+    message: err?.message,
+    response: err?.response?.data,
+    stack: err?.stack
+  });
+
+  return res.send("❌ An error occurred during authentication.");
+}
+
 });
 
 module.exports = router;
