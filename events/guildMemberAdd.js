@@ -52,7 +52,7 @@ async function updateSheet(docId, member, department, callsign) {
 
 module.exports = {
   name: Events.GuildMemberAdd,
-  console.log("✅ guildMemberAdd fired for:", member.user.tag);
+  console.log("guidMemberAdd fired for:" member.user.tag);
   async execute(member) {
     const guildId = member.guild.id;
     const config = ROLE_IDS[guildId];
