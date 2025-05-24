@@ -44,7 +44,7 @@ module.exports = async function postApplication({ client, user, department, plat
 
   const buttons = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-      .setCustomId(`accept_app_${user.id}_${platform}`)
+      .setCustomId(`accept_app_${userId}_${platform}_${department}`)
       .setLabel("✅ Accept")
       .setStyle(ButtonStyle.Success),
 
