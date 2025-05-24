@@ -99,29 +99,22 @@ client.on("interactionCreate", async (interaction) => {
   try {
     
     // Updated to use embeds for all bot messages, including DMs
-   if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
+if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
   const parts = interaction.customId.split("_");
   const userId = parts[2];
   const platform = parts[3];
+  const departmentKey = parts[4]; // e.g., 'safr'
 
-  console.log("🧪 Accept parsed:", { userId, platform });
+  console.log("🧪 Accept parsed:", { userId, platform, departmentKey });
 
   const applicant = await client.users.fetch(userId).catch(() => null);
   if (!applicant) {
     return interaction.reply({ content: "❌ Could not find the user.", ephemeral: true });
   }
 
-  console.log("🧪 Thread info:", {
-    isDefined: Boolean(interaction.message.thread),
-    threadId: interaction.message.thread?.id,
-    messageId: interaction.message.id,
-    content: interaction.message.content
-  });
-
   const thread = interaction.channel?.isThread() ? interaction.channel : null;
-
   if (thread) {
-    await thread.setAppliedTags(['1375025141347516487']); // ✅ Accepted
+    await thread.setAppliedTags(['1375025141347516487']);
     console.log("✅ Tagged thread as Accepted");
   } else {
     console.warn("❌ Could not find thread to tag (Accept)");
@@ -140,22 +133,21 @@ client.on("interactionCreate", async (interaction) => {
     return interaction.reply({ content: "❌ Could not DM the user.", ephemeral: true });
   }
 
-  // ✅ Save accepted user to database with correct mapped department
   const AcceptedUser = require('./models/AcceptedUser');
   const departmentMap = {
     civilian: "Civilian",
     pso: "PSO",
     safr: "SAFR"
   };
-  const roleDept = departmentMap[platform.toLowerCase()] || "Civilian";
+  const department = departmentMap[departmentKey?.toLowerCase()] || "Civilian";
 
   try {
     await AcceptedUser.findOneAndUpdate(
       { discordId: userId },
-      { discordId: userId, department: roleDept },
+      { discordId: userId, department },
       { upsert: true, new: true }
     );
-    console.log(`✅ Saved accepted user ${userId} to database with department ${roleDept}`);
+    console.log(`✅ Saved accepted user ${userId} to database with department ${department}`);
   } catch (err) {
     console.error("❌ Failed to save accepted user:", err);
   }
@@ -165,6 +157,7 @@ client.on("interactionCreate", async (interaction) => {
     components: [],
   });
 
+  const AuthUser = require("./backend/models/authUser");
   let attempts = 0;
   const interval = setInterval(async () => {
     const verified = await AuthUser.findOne({ discordId: userId });
@@ -197,7 +190,7 @@ client.on("interactionCreate", async (interaction) => {
         .setDescription("Here are your one-time use invite links (valid for 24 hours):")
         .addFields(
           { name: `${platformLabel} Server`, value: invites[platformLabel] || "Invite failed." },
-          { name: `Economy Server`, value: invites.Economy || "Invite failed." }
+          { name: "Economy Server", value: invites.Economy || "Invite failed." }
         )
         .setColor(0x2ecc71);
 
