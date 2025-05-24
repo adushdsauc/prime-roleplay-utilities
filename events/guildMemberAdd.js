@@ -1,7 +1,7 @@
 // /events/guildMemberAdd.js
 const { Events, EmbedBuilder } = require("discord.js");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
-const creds = require("../config/primerp-sheets-bf194dc4ba11.json");
+const creds = JSON.parse(process.env.GOOGLE_SHEETS_CREDENTIALS);
 const AcceptedUser = require("../models/AcceptedUser");
 
 const XBOX_GUILD_ID = "1372312806107512894";
