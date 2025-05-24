@@ -1,8 +1,8 @@
-// /events/guildMemberAdd.js
 const { Events, EmbedBuilder } = require("discord.js");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const creds = JSON.parse(process.env.GOOGLE_SHEETS_CREDENTIALS);
 const AcceptedUser = require("../models/AcceptedUser");
+const Invite = require("../models/Invite");
 
 const XBOX_GUILD_ID = "1372312806107512894";
 const PLAYSTATION_GUILD_ID = "1369495333574545559";
@@ -31,7 +31,6 @@ const ROLE_IDS = {
 };
 
 let rookieCounter = 1250;
-
 function generateCallsign(department) {
   const prefix = department === "PSO" ? "D" : department === "SAFR" ? "E" : "C";
   return `${prefix}-${rookieCounter++}`;
@@ -58,6 +57,39 @@ module.exports = {
     const guildId = member.guild.id;
     const config = ROLE_IDS[guildId];
     if (!config) return;
+
+    // Invite validation
+    try {
+      const invites = await member.guild.invites.fetch().catch(() => null);
+      if (invites) {
+        const used = invites.find(inv => inv.uses === 1);
+        if (used) {
+          const inviteData = await Invite.findOne({ code: used.code });
+          if (!inviteData) {
+            console.log("⚠️ Invite not tracked in DB:", used.code);
+            return;
+          }
+
+          if (inviteData.userId !== member.id) {
+            const logChannel = member.guild.channels.cache.get(LOG_CHANNELS[guildId]);
+            if (logChannel?.isTextBased()) {
+              logChannel.send({
+                content: `<@${member.id}> was **kicked** for using an unauthorized invite.\nInvite code: \`${used.code}\`\nIntended for: <@${inviteData.userId}>`
+              });
+            }
+
+            await member.send("🚫 This invite wasn’t meant for you. You’ve been removed from the server.");
+            await member.kick("Unauthorized invite use");
+            return;
+          }
+
+          inviteData.used = true;
+          await inviteData.save();
+        }
+      }
+    } catch (err) {
+      console.error("❌ Error in invite validation:", err);
+    }
 
     // Retrieve department from database
     let department = "Civilian";
