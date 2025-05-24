@@ -123,7 +123,7 @@ module.exports = {
       const role = member.guild.roles.cache.get(roleId);
       if (role) {
         await member.roles.add(role).catch(err => {
-        console.warn(`❌ Failed to assign role ${roleId} to ${member.user.tag}: ${err.message}`);
+          console.warn(`❌ Failed to assign role ${roleId} to ${member.user.tag}: ${err.message}`);
         });
       }
     }
@@ -148,7 +148,7 @@ module.exports = {
     const baseName = member.user.username;
     const nickname = `${callsign} | ${baseName}`;
     await member.setNickname(nickname).catch(err => {
-      console.warn(`❌ Failed to set nickname for ${member.user.tag}:", err.message);
+      console.warn(`❌ Failed to set nickname for ${member.user.tag}: ${err.message}`);
     });
     console.log("✏️ Nickname set attempt:", nickname);
 
