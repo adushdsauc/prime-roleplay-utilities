@@ -144,7 +144,7 @@ module.exports = {
     const baseName = member.user.username;
     const nickname = `${callsign} | ${baseName}`;
     await member.setNickname(nickname).catch(err => {
-      console.warn(`❌ Failed to set nickname for ${member.user.tag}:", err.message);
+      console.warn(`❌ Failed to set nickname for ${member.user.tag}:`, err.message);
     });
     console.log("✏️ Nickname set attempt:", nickname);
 
