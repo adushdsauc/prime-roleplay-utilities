@@ -23,13 +23,9 @@ module.exports = async function postApplication({ client, user, department, plat
   answers.forEach((a, i) => {
     const question = (typeof a.q === "string" && a.q.trim()) || `Question ${i + 1}`;
     let answer = (typeof a.a === "string" && a.a.trim()) || "No response";
-  
-    // Fallback if somehow not string
-    if (typeof question !== "string") return;
-    if (typeof answer !== "string") return;
-  
+
     if (answer.length > 1024) answer = answer.slice(0, 1021) + "...";
-  
+
     fields.push({
       name: `Q${i + 1}: ${question}`,
       value: answer,
@@ -44,7 +40,7 @@ module.exports = async function postApplication({ client, user, department, plat
 
   const buttons = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-      .setCustomId(`accept_app_${userId}_${platform}_${department}`)
+      .setCustomId(`accept_app_${user.id}_${platform}_${department}`)
       .setLabel("✅ Accept")
       .setStyle(ButtonStyle.Success),
 
@@ -64,7 +60,6 @@ module.exports = async function postApplication({ client, user, department, plat
     },
     reason: `New ${department} application from ${user.tag}`,
   });
-  
 
   return thread;
 };
