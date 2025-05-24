@@ -17,7 +17,7 @@ const mongoose = require("mongoose");
 const postApplication = require("./utils/postApplication");
 const AuthUser = require("./backend/models/authUser");
 const Invite = require("./models/Invite");
-const LOG_CHANNEL_ID = "1369094726124572712"; // ⬅️ Replace this
+const LOG_CHANNEL_ID = "1375641960651689984"; // ⬅️ Replace this
 const createSecureInvite = require("./utils/createSecureInvite");
 
 const client = new Client({
