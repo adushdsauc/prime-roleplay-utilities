@@ -52,8 +52,9 @@ async function updateSheet(docId, member, department, callsign) {
 
 module.exports = {
   name: Events.GuildMemberAdd,
-  console.log("guidMemberAdd fired for:" member.user.tag);
   async execute(member) {
+    console.log("✅ guildMemberAdd fired for:", member.user.tag);
+
     const guildId = member.guild.id;
     const config = ROLE_IDS[guildId];
     if (!config) return;
@@ -74,17 +75,16 @@ module.exports = {
     }
 
     // Generate callsign and update sheet
-// Generate callsign and update sheet
-const callsign = generateCallsign(department);
-const sheetId = guildId === XBOX_GUILD_ID ? XBOX_SHEET_ID : PLAYSTATION_SHEET_ID;
-await updateSheet(sheetId, member, department, callsign);
+    const callsign = generateCallsign(department);
+    const sheetId = guildId === XBOX_GUILD_ID ? XBOX_SHEET_ID : PLAYSTATION_SHEET_ID;
+    await updateSheet(sheetId, member, department, callsign);
 
-// Set nickname: Callsign | Username
-const baseName = member.user.username;
-const nickname = `${callsign} | ${baseName}`;
-await member.setNickname(nickname).catch(err => {
-  console.warn(`❌ Failed to set nickname for ${member.user.tag}:`, err.message);
-});
+    // Set nickname: Callsign | Username
+    const baseName = member.user.username;
+    const nickname = `${callsign} | ${baseName}`;
+    await member.setNickname(nickname).catch(err => {
+      console.warn(`❌ Failed to set nickname for ${member.user.tag}:`, err.message);
+    });
 
     // Log join embed
     const logChannelId = LOG_CHANNELS[guildId];
