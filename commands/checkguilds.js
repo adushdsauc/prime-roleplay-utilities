@@ -13,7 +13,7 @@ module.exports = {
         .setDescription("Select a user to check")
         .setRequired(true)
     )
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+    .setDefaultMemberPermissions(PermissionFlagsBits.MoveMembers), // ✅ Only visible to users with "Move Members"
 
   async execute(interaction) {
     try {
