@@ -30,6 +30,9 @@ const client = new Client({
   partials: [Partials.Channel],
 });
 
+const guildMemberAddHandler = require("./events/guildMemberAdd");
+client.on("guildMemberAdd", guildMemberAddHandler.execute);
+
 client.commands = new Collection();
 const sessions = new Map();
 
