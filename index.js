@@ -194,6 +194,25 @@ if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
         .setColor(0x2ecc71);
 
       await applicant.send({ embeds: [inviteEmbed] });
+
+      // ✅ Send verification log
+      const logChannelId = "YOUR_LOG_CHANNEL_ID_HERE"; // ⬅️ Replace this
+      const logChannel = await client.channels.fetch(logChannelId).catch(() => null);
+      if (logChannel && logChannel.isTextBased()) {
+        const logEmbed = new EmbedBuilder()
+          .setTitle("✅ User Authenticated")
+          .setDescription(`<@${userId}> (${applicant.tag}) has verified.`)
+          .addFields(
+            { name: "Platform", value: platformLabel, inline: true },
+            { name: "Department", value: department, inline: true }
+          )
+          .setColor(0x2ecc71)
+          .setFooter({ text: "Prime RP Assistant • OAuth Verified" })
+          .setTimestamp();
+
+        await logChannel.send({ embeds: [logEmbed] });
+      }
+
       return;
     }
 
