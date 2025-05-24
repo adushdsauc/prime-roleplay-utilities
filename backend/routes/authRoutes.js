@@ -68,34 +68,35 @@ router.get("/callback", async (req, res) => {
     });
 
     // Filter for unauthorized RP guilds
-    if (!isBypass) {
-      const flagged = guildRes.data.filter(g =>
-        g.name.toLowerCase().includes("roleplay") &&
-        !ALLOWED_GUILDS.includes(g.id)
-      );
-const { Client, GatewayIntentBits } = require("discord.js"); // only needed once globally
-const client = require("../../index.js"); // adjust path if needed
+   if (!isBypass) {
+  const flagged = guildRes.data.filter(g =>
+    g.name.toLowerCase().includes("roleplay") &&
+    !ALLOWED_GUILDS.includes(g.id)
+  );
 
-const failLogChannel = client.channels.cache.get(process.env.AUTH_FAIL_LOG_CHANNEL);
-if (failLogChannel) {
-  const guildList = flagged.map(g => `• ${g.name} (${g.id})`).join("\n");
+  if (flagged.length > 0) {
+    // ✅ ONLY log here, when actually blocked
+    const failLogChannel = client.channels.cache.get(process.env.AUTH_FAIL_LOG_CHANNEL);
+    if (failLogChannel) {
+      const guildList = flagged
+        .map(g => `• ${g.name || "Unknown Guild"} (${g.id})`)
+        .join("\n");
 
-  failLogChannel.send({
-    embeds: [
-      {
-        title: "❌ OAuth Blocked: Unauthorized RP Servers",
-        description: `User: <@${user.id}> (${user.username})\nFlagged Guilds:\n${guildList}`,
-        color: 0xff0000,
-        timestamp: new Date().toISOString()
-      }
-    ]
-  }).catch(console.error);
-}
-
-      if (flagged.length > 0) {
-        return res.send("❌ You are a member of other roleplay servers. Access denied.");
-      }
+      failLogChannel.send({
+        embeds: [
+          {
+            title: "❌ OAuth Blocked: Unauthorized RP Servers",
+            description: `User: <@${user.id}> (${user.username})\nFlagged Guilds:\n${guildList}`,
+            color: 0xff0000,
+            timestamp: new Date().toISOString()
+          }
+        ]
+      }).catch(console.error);
     }
+
+    return res.send("It has been detected that you are apart of another roleplay server. Before you proceed please create a support ticket in Prime Network HQ server and provide a picture of your server list. Our team will assist you as soon as possible!");
+  }
+}
 
     // Save to DB
     await AuthUser.findOneAndUpdate(
