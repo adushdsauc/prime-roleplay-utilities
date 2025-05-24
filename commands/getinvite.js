@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require("discord.js");
 
-const STAFF_ROLE_ID = "1368345392516698222";
+const STAFF_ROLE_ID = "1375605232226140300";
 
 const ECONOMY_GUILD_ID = "1369029438351867964";
 const XBOX_GUILD_ID = "1372312806107512894";
