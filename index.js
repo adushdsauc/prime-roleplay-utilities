@@ -102,10 +102,10 @@ client.on("interactionCreate", async (interaction) => {
 if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
   const parts = interaction.customId.split("_");
   const userId = parts[2];
-  const platform = parts[3];
-  const departmentKey = parts[4]; // e.g., 'safr'
+  const platform = parts[3];       // xbox or playstation
+  const deptKey = parts[4];        // civilian, pso, safr
 
-  console.log("🧪 Accept parsed:", { userId, platform, departmentKey });
+  console.log("🧪 Accept parsed:", { userId, platform, deptKey });
 
   const applicant = await client.users.fetch(userId).catch(() => null);
   if (!applicant) {
@@ -114,10 +114,8 @@ if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
 
   const thread = interaction.channel?.isThread() ? interaction.channel : null;
   if (thread) {
-    await thread.setAppliedTags(['1375025141347516487']);
+    await thread.setAppliedTags(['1375025141347516487']); // ✅ Accepted
     console.log("✅ Tagged thread as Accepted");
-  } else {
-    console.warn("❌ Could not find thread to tag (Accept)");
   }
 
   const { EmbedBuilder } = require("discord.js");
@@ -139,7 +137,7 @@ if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
     pso: "PSO",
     safr: "SAFR"
   };
-  const department = departmentMap[departmentKey?.toLowerCase()] || "Civilian";
+  const department = departmentMap[deptKey?.toLowerCase()] || "Civilian";
 
   try {
     await AcceptedUser.findOneAndUpdate(
@@ -159,6 +157,7 @@ if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
 
   const AuthUser = require("./backend/models/authUser");
   let attempts = 0;
+
   const interval = setInterval(async () => {
     const verified = await AuthUser.findOne({ discordId: userId });
     if (verified) {
