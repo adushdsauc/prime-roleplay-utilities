@@ -132,103 +132,115 @@ client.on("interactionCreate", async (interaction) => {
   try {
     
     // Updated to use embeds for all bot messages, including DMs
-if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
-  const parts = interaction.customId.split("_");
-  const userId = parts[2];
-  const platform = parts[3];
-
-  console.log("🧪 Accept parsed:", { userId, platform });
-
-  const applicant = await client.users.fetch(userId).catch(() => null);
-  if (!applicant) {
-    return interaction.reply({ content: "❌ Could not find the user.", ephemeral: true });
-  }
-
-  console.log("🧪 Thread info:", {
-    isDefined: Boolean(interaction.message.thread),
-    threadId: interaction.message.thread?.id,
-    messageId: interaction.message.id,
-    content: interaction.message.content
-  });
-
-  const thread = interaction.channel?.isThread() ? interaction.channel : null;
-
-  if (thread) {
-    await thread.setAppliedTags(['1375025141347516487']); // ✅ Accepted
-    console.log("✅ Tagged thread as Accepted");
-  } else {
-    console.warn("❌ Could not find thread to tag (Accept)");
-  }
-
-  const { EmbedBuilder } = require("discord.js");
-  const loginEmbed = new EmbedBuilder()
-    .setTitle("🎉 You've been accepted to Prime Roleplay!")
-    .setDescription("Please log in with Discord to continue. Once verified, you'll receive your invite links.")
-    .addFields({ name: "Login", value: `[Click here to verify](https://prime-roleplay-utilities-production.up.railway.app/auth/login
-)` })
-    .setColor(0x2ecc71);
-
-  try {
-    await applicant.send({ embeds: [loginEmbed] });
-  } catch {
-    return interaction.reply({ content: "❌ Could not DM the user.", ephemeral: true });
-  }
-
-  await interaction.update({
-    content: `✅ <@${userId}> has been accepted. Awaiting OAuth verification...`,
-    components: [],
-  });
-
-  let attempts = 0;
-  const interval = setInterval(async () => {
-    const verified = await AuthUser.findOne({ discordId: userId });
-    if (verified) {
-      clearInterval(interval);
-
-      const createSecureInvite = require("./utils/createSecureInvite");
-      const platformLabel = platform.charAt(0).toUpperCase() + platform.slice(1);
-      const invites = {};
-
-      const economyInvite = await createSecureInvite({
-        client,
-        guildId: process.env.ECONOMY_SERVER_ID,
-        userId,
-        platform
+    if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
+      const parts = interaction.customId.split("_");
+      const userId = parts[2];
+      const platform = parts[3];
+    
+      console.log("🧪 Accept parsed:", { userId, platform });
+    
+      const applicant = await client.users.fetch(userId).catch(() => null);
+      if (!applicant) {
+        return interaction.reply({ content: "❌ Could not find the user.", ephemeral: true });
+      }
+    
+      console.log("🧪 Thread info:", {
+        isDefined: Boolean(interaction.message.thread),
+        threadId: interaction.message.thread?.id,
+        messageId: interaction.message.id,
+        content: interaction.message.content
       });
-      if (economyInvite) invites.Economy = economyInvite;
-
-      const platformGuildId = process.env[`${platform.toUpperCase()}_SERVER_ID`];
-      const platformInvite = await createSecureInvite({
-        client,
-        guildId: platformGuildId,
-        userId,
-        platform
-      });
-      if (platformInvite) invites[platformLabel] = platformInvite;
-
-      const inviteEmbed = new EmbedBuilder()
-        .setTitle("✅ You’ve been verified!")
-        .setDescription("Here are your one-time use invite links (valid for 24 hours):")
-        .addFields(
-          { name: `${platformLabel} Server`, value: invites[platformLabel] || "Invite failed." },
-          { name: `Economy Server`, value: invites.Economy || "Invite failed." }
-        )
+    
+      const thread = interaction.channel?.isThread() ? interaction.channel : null;
+    
+      if (thread) {
+        await thread.setAppliedTags(['1375025141347516487']); // ✅ Accepted
+        console.log("✅ Tagged thread as Accepted");
+      } else {
+        console.warn("❌ Could not find thread to tag (Accept)");
+      }
+    
+      const { EmbedBuilder } = require("discord.js");
+      const loginEmbed = new EmbedBuilder()
+        .setTitle("🎉 You've been accepted to Prime Roleplay!")
+        .setDescription("Please log in with Discord to continue. Once verified, you'll receive your invite links.")
+        .addFields({ name: "Login", value: `[Click here to verify](https://prime-roleplay-utilities-production.up.railway.app/auth/login)` })
         .setColor(0x2ecc71);
-
-      await applicant.send({ embeds: [inviteEmbed] });
-      return;
-    }
-
-    if (++attempts > 18) {
-      clearInterval(interval);
-      const timeoutEmbed = new EmbedBuilder()
-        .setTitle("⚠️ Verification Timed Out")
-        .setDescription("Your verification window expired. Please start over or contact staff.")
-        .setColor(0xff0000);
-      await applicant.send({ embeds: [timeoutEmbed] });
-    }
-  }, 10000);
-}
+    
+      try {
+        await applicant.send({ embeds: [loginEmbed] });
+      } catch {
+        return interaction.reply({ content: "❌ Could not DM the user.", ephemeral: true });
+      }
+    
+      // ✅ Save accepted user to database
+      const AcceptedUser = require('./models/AcceptedUser');
+      try {
+        await AcceptedUser.findOneAndUpdate(
+          { discordId: userId },
+          { discordId: userId, department: platform },
+          { upsert: true, new: true }
+        );
+        console.log(`✅ Saved accepted user ${userId} to database.`);
+      } catch (err) {
+        console.error("❌ Failed to save accepted user:", err);
+      }
+    
+      await interaction.update({
+        content: `✅ <@${userId}> has been accepted. Awaiting OAuth verification...`,
+        components: [],
+      });
+    
+      let attempts = 0;
+      const interval = setInterval(async () => {
+        const verified = await AuthUser.findOne({ discordId: userId });
+        if (verified) {
+          clearInterval(interval);
+    
+          const createSecureInvite = require("./utils/createSecureInvite");
+          const platformLabel = platform.charAt(0).toUpperCase() + platform.slice(1);
+          const invites = {};
+    
+          const economyInvite = await createSecureInvite({
+            client,
+            guildId: process.env.ECONOMY_SERVER_ID,
+            userId,
+            platform
+          });
+          if (economyInvite) invites.Economy = economyInvite;
+    
+          const platformGuildId = process.env[`${platform.toUpperCase()}_SERVER_ID`];
+          const platformInvite = await createSecureInvite({
+            client,
+            guildId: platformGuildId,
+            userId,
+            platform
+          });
+          if (platformInvite) invites[platformLabel] = platformInvite;
+    
+          const inviteEmbed = new EmbedBuilder()
+            .setTitle("✅ You’ve been verified!")
+            .setDescription("Here are your one-time use invite links (valid for 24 hours):")
+            .addFields(
+              { name: `${platformLabel} Server`, value: invites[platformLabel] || "Invite failed." },
+              { name: `Economy Server`, value: invites.Economy || "Invite failed." }
+            )
+            .setColor(0x2ecc71);
+    
+          await applicant.send({ embeds: [inviteEmbed] });
+          return;
+        }
+    
+        if (++attempts > 18) {
+          clearInterval(interval);
+          const timeoutEmbed = new EmbedBuilder()
+            .setTitle("⚠️ Verification Timed Out")
+            .setDescription("Your verification window expired. Please start over or contact staff.")
+            .setColor(0xff0000);
+          await applicant.send({ embeds: [timeoutEmbed] });
+        }
+      }, 10000);
+    }    
 
       if (interaction.isButton() && interaction.customId.startsWith("deny_app_")) {
         const userId = interaction.customId.split("_")[2];
