@@ -2,7 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("disc
 const AuthUser = require("../backend/models/authUser");
 const axios = require("axios");
 
-const STAFF_ROLE_ID = "1368345392516698222";
+const STAFF_ROLE_ID = "1375605232226140300";
 
 module.exports = {
   data: new SlashCommandBuilder()
