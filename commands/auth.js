@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
 
-const STAFF_ROLE_ID = "1368345392516698222"; // Your staff role ID
+const STAFF_ROLE_ID = "1375605232226140300"; // Your staff role ID
 const AUTH_URL = "https://prime-roleplay-utilities-production.up.railway.app/auth/login?bypass=true";
 
 module.exports = {
