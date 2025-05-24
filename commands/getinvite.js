@@ -19,7 +19,7 @@ module.exports = {
           { name: "PlayStation", value: "playstation" }
         )
     )
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+    .setDefaultMemberPermissions(PermissionFlagsBits.MoveMembers), // ✅ Only visible to users with "Move Members"
 
   async execute(interaction) {
     const requester = interaction.member;
