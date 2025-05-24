@@ -3,6 +3,7 @@ const axios = require("axios");
 const router = express.Router();
 const { URLSearchParams } = require("url");
 const AuthUser = require("../models/authUser");
+const client = require("../../index.js"); // or the correct relative path to your bot file
 
 const DISCORD_API = "https://discord.com/api";
 const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
