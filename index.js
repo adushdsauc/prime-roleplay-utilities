@@ -94,42 +94,6 @@ const QUESTIONS = {
   ]
 };
 
-  try {
-    const invites = await member.guild.invites.fetch().catch(() => null);
-    if (!invites) return;
-
-    // Look for any invite with 1 use
-    const used = invites.find(inv => inv.uses === 1);
-    if (!used) return;
-
-    const inviteData = await Invite.findOne({ code: used.code });
-
-    if (!inviteData) {
-      console.log("⚠️ Invite not tracked in DB:", used.code);
-      return;
-    }
-
-    if (inviteData.userId !== member.id) {
-      const logChannel = await client.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
-      if (logChannel?.isTextBased()) {
-        logChannel.send({
-          content: `<@${member.id}> was **kicked** for using an unauthorized invite.\nInvite code: \`${used.code}\`\nIntended for: <@${inviteData.userId}>`
-        });
-      }
-
-      await member.send("🚫 This invite wasn’t meant for you. You’ve been removed from the server.");
-      await member.kick("Unauthorized invite use");
-      return;
-    }
-
-    inviteData.used = true;
-    await inviteData.save();
-
-  } catch (err) {
-    console.error("❌ Error in invite validation:", err);
-  }
-});
-
 client.on("interactionCreate", async (interaction) => {
   try {
     
