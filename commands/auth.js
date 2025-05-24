@@ -7,12 +7,12 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("auth")
     .setDescription("Send the authentication link (staff only)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.MoveMembers), // ✅ Only visible to users with "Move Members"
+    .setDefaultMemberPermissions(PermissionFlagsBits.MoveMembers), // Set required permission
 
   async execute(interaction) {
     const requester = interaction.member;
 
-    // ✅ Staff role check
+    // Role check
     if (!requester.roles.cache.has(STAFF_ROLE_ID)) {
       return interaction.reply({
         content: "❌ You do not have permission to use this command.",
@@ -21,15 +21,13 @@ module.exports = {
     }
 
     const embed = new EmbedBuilder()
-const embed = new EmbedBuilder()
-  .setTitle("🔐 Authenticate with Prime Roleplay")
-  .setDescription(`[Click here to authenticate](${AUTH_URL}) through Discord.\nThis verifies your identity and allows you to access roleplay tools.`)
-  .addFields({ name: "Sent By", value: `<@${requester.id}> (${requester.user.tag})` })
-  .setColor(0x00B0F4)
-  .setFooter({ text: "Prime RP Assistant • OAuth Verification" })
-  .setTimestamp();
+      .setTitle("🔐 Authenticate with Prime Roleplay")
+      .setDescription(`[Click here to authenticate](${AUTH_URL}) through Discord.\nThis verifies your identity and allows you to access roleplay tools.`)
+      .addFields({ name: "Sent By", value: `<@${requester.id}> (${requester.user.tag})` })
+      .setColor(0x00B0F4)
+      .setFooter({ text: "Prime RP Assistant • OAuth Verification" })
+      .setTimestamp();
 
-
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply({ embeds: [embed] }); // Not ephemeral = public in channel
   }
 };
