@@ -54,7 +54,7 @@ module.exports = async function postApplication({ client, user, department, plat
     name: title,
     appliedTags: ['1375025290362753074'], // 🆕 New Application
     message: {
-      content: `<@&${staffRoleId}> New application received.`,
+      content: `<@&${1375605232226140300}> New application received.`,
       embeds: [embed],
       components: [buttons],
     },
