@@ -43,9 +43,10 @@ const {
       if (!member) {
         return interaction.reply({ content: "❌ Could not fetch the user.", ephemeral: true });
       }
-  
+      console.log("📌 Checking department roles:", departmentRoles.map(([rank, obj]) => `${rank}: ${obj[platform].roleId}`));
       const departmentRoles = Object.entries(roleMappings[department]);
-  
+      console.log("🧠 Member roles:", member.roles.cache.map(r => `${r.name} (${r.id})`));
+
       // Find user's current rank
       const currentIndex = departmentRoles.findIndex(([_, roleObj]) => {
         return member.roles.cache.has(roleObj[platform].roleId);
