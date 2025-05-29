@@ -229,7 +229,7 @@ await interaction.channel.send({ embeds: [confirmEmbed] });
       await applicant.send({ embeds: [inviteEmbed] });
 
       // ✅ Send verification log
-      const logChannelId = "1368696606765088848"; // ⬅️ Replace this
+      const logChannelId = "1375641960651689984"; // ⬅️ Replace this
       const logChannel = await client.channels.fetch(logChannelId).catch(() => null);
       if (logChannel && logChannel.isTextBased()) {
         const logEmbed = new EmbedBuilder()
