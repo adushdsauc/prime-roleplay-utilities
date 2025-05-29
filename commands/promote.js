@@ -96,7 +96,9 @@ const {
   
       const prefix = range.match(/[A-Za-z\-]+/g)?.[0]?.trim() || "";
       let assignedNumber;
-  
+      console.log(`🔍 Checking callsign range for ${department}: ${prefix}${start} - ${prefix}${end}`);
+      const used = await Callsign.find({ department }).sort({ number: 1 });
+      console.log("📄 Already assigned callsigns:", used.map(c => `${c.number}`));
       for (let i = start; i <= end; i++) {
         const existing = await Callsign.findOne({ department, number: i });
         if (!existing) {
