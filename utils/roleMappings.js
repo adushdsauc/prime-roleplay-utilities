@@ -1,47 +1,46 @@
 const roleMappings = {
-        "PSO": {
-          "Director Of Public Safety": {
-            xbox: { range: "D-101", roleId: "1372312806212239409" },
-            playstation: { range: "D-101", roleId: "1369497153918996630" }
-          },
-          "Assistant Director Of Public Safety": {
-            xbox: { range: "D-102", roleId: "1372312806212239408" },
-            playstation: { range: "D-102", roleId: "1370380132597895268" }
-          },
-          "PSO | Commander": {
-            xbox: { range: "D-103 - D-108", roleId: "1372312806204117020" },
-            playstation: { range: "D-103 - D-108", roleId: "1369520228010037308" }
-          },
-          "PSO | Captain": {
-            xbox: { range: "D-109 - D-115", roleId: "1372312806204117019" },
-            playstation: { range: "D-109 - D-115", roleId: "1369497203600654406" }
-          },
-          "PSO | Lieutenant": {
-            xbox: { range: "B-116 - B-150", roleId: "1372312806204117018" },
-            playstation: { range: "B-116 - B-150", roleId: "1369520226344898581" }
-          },
-          "PSO | Master Sergeant": {
-            xbox: { range: "B-151 - B-250", roleId: "1372312806204117017" },
-            playstation: { range: "B-151 - B-250", roleId: "1369757277656973362" }
-          },
-          "PSO | Sergeant": {
-            xbox: { range: "B-251 - B-450", roleId: "1372312806204117016" },
-            playstation: { range: "B-251 - B-450", roleId: "1369520227829809223" }
-          },
-          "PSO | Sr. Officer": {
-            xbox: { range: "B-451 - B-750", roleId: "1372312806204117015" },
-            playstation: { range: "B-451 - B-750", roleId: "1369520219315503154" }
-          },
-          "PSO | Officer": {
-            xbox: { range: "B-751 - B-1250", roleId: "1372312806204117014" },
-            playstation: { range: "B-751 - B-1250", roleId: "1369520223643766794" }
-          },
-          "PSO | Rookie": {
-            xbox: { range: "C-1251 - C-2000", roleId: "1372312806204117013" },
-            playstation: { range: "C-1251 - C-2000", roleId: "1369497170432229417" }
-          }
-        },
-      
+"PSO": {
+  "PSO | Rookie": {
+    xbox: { range: "C-1251 - C-2000", roleId: "1372312806204117013" },
+    playstation: { range: "C-1251 - C-2000", roleId: "1369497170432229417" }
+  },
+  "PSO | Officer": {
+    xbox: { range: "B-751 - B-1250", roleId: "1372312806204117014" },
+    playstation: { range: "B-751 - B-1250", roleId: "1369520223643766794" }
+  },
+  "PSO | Sr. Officer": {
+    xbox: { range: "B-451 - B-750", roleId: "1372312806204117015" },
+    playstation: { range: "B-451 - B-750", roleId: "1369520219315503154" }
+  },
+  "PSO | Sergeant": {
+    xbox: { range: "B-251 - B-450", roleId: "1372312806204117016" },
+    playstation: { range: "B-251 - B-450", roleId: "1369520227829809223" }
+  },
+  "PSO | Master Sergeant": {
+    xbox: { range: "B-151 - B-250", roleId: "1372312806204117017" },
+    playstation: { range: "B-151 - B-250", roleId: "1369757277656973362" }
+  },
+  "PSO | Lieutenant": {
+    xbox: { range: "B-116 - B-150", roleId: "1372312806204117018" },
+    playstation: { range: "B-116 - B-150", roleId: "1369520226344898581" }
+  },
+  "PSO | Captain": {
+    xbox: { range: "D-109 - D-115", roleId: "1372312806204117019" },
+    playstation: { range: "D-109 - D-115", roleId: "1369497203600654406" }
+  },
+  "PSO | Commander": {
+    xbox: { range: "D-103 - D-108", roleId: "1372312806204117020" },
+    playstation: { range: "D-103 - D-108", roleId: "1369520228010037308" }
+  },
+  "Assistant Director Of Public Safety": {
+    xbox: { range: "D-102", roleId: "1372312806212239408" },
+    playstation: { range: "D-102", roleId: "1370380132597895268" }
+  },
+  "Director Of Public Safety": {
+    xbox: { range: "D-101", roleId: "1372312806212239409" },
+    playstation: { range: "D-101", roleId: "1369497153918996630" }
+  }
+},
         "SAFR": {
           "Director Of SAFR": {
             xbox: { range: "Command 1", roleId: "1372312806191399027" },
