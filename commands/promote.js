@@ -73,11 +73,18 @@ const {
       await member.roles.add(nextRole[platform].roleId).catch(() => {});
   
       const range = nextRole[platform].range;
-      const [startStr, endStr] = range.split("-").map(str => str.replace(/[^\d]/g, "").trim());
-      const start = parseInt(startStr, 10);
-      const end = parseInt(endStr || startStr, 10);
-      const prefix = range.match(/[A-Za-z\-]+/g)?.[0]?.trim() || "";
-  
+      console.log(`📦 Raw range string:`, range);
+      let start = null;
+      let end = null;
+      
+      const matches = range.match(/\d+/g); // Extract all number parts
+      if (matches && matches.length >= 1) {
+        start = parseInt(matches[0], 10);
+        end = parseInt(matches[1] || matches[0], 10);
+      } else {
+        return interaction.editReply({ content: "❌ Invalid callsign range format in roleMappings." });
+      }
+      
       console.log(`🔍 Checking callsign range for ${department}: ${prefix}${start} - ${prefix}${end}`);
       const usedNumbers = new Set(
         (await Callsign.find({ department })).map(c => c.number)
