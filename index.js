@@ -17,7 +17,7 @@ const mongoose = require("mongoose");
 const postApplication = require("./utils/postApplication");
 const AuthUser = require("./backend/models/authUser");
 const Invite = require("./models/Invite");
-const LOG_CHANNEL_ID = "1375641960651689984"; // ⬅️ Replace this
+const LOG_CHANNEL_ID = "1375641960651689984"; 
 const createSecureInvite = require("./utils/createSecureInvite");
 
 const client = new Client({
@@ -150,6 +150,39 @@ if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
     console.error("❌ Failed to save accepted user:", err);
   }
 
+  const guildId = interaction.guildId;
+const guild = await client.guilds.fetch(guildId).catch(() => null);
+const member = await guild?.members.fetch(userId).catch(() => null);
+
+if (member) {
+  const APPLIED_ROLE = "1368345426482167818";
+  const ACCEPTED_ROLE = "1368345401815465985";
+
+  try {
+    await member.roles.remove(APPLIED_ROLE);
+    await member.roles.add(ACCEPTED_ROLE);
+    console.log(`✅ Updated roles for ${userId}`);
+  } catch (err) {
+    console.error(`❌ Failed to update roles for ${userId}:`, err);
+  }
+} else {
+  console.warn(`⚠️ Could not find guild member ${userId}`);
+}
+
+  const confirmEmbed = new EmbedBuilder()
+  .setTitle("✅ Application Accepted")
+  .setDescription(`Application for <@${userId}> has been accepted.`)
+  .addFields(
+    { name: "Accepted By", value: `<@${interaction.user.id}>`, inline: true },
+    { name: "Platform", value: platform.charAt(0).toUpperCase() + platform.slice(1), inline: true },
+    { name: "Department", value: department, inline: true }
+  )
+  .setColor(0x3498db)
+  .setFooter({ text: "Prime RP Utilities • Staff Action" })
+  .setTimestamp();
+
+await interaction.channel.send({ embeds: [confirmEmbed] });
+
   await interaction.update({
     content: `✅ <@${userId}> has been accepted. Awaiting OAuth verification...`,
     components: [],
@@ -196,7 +229,7 @@ if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
       await applicant.send({ embeds: [inviteEmbed] });
 
       // ✅ Send verification log
-      const logChannelId = "YOUR_LOG_CHANNEL_ID_HERE"; // ⬅️ Replace this
+      const logChannelId = "1368696606765088848"; // ⬅️ Replace this
       const logChannel = await client.channels.fetch(logChannelId).catch(() => null);
       if (logChannel && logChannel.isTextBased()) {
         const logEmbed = new EmbedBuilder()
