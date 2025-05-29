@@ -29,38 +29,28 @@ const {
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
   
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ ephemeral: true });
+  
       const user = interaction.options.getUser("user");
       const department = interaction.options.getString("department");
       const guild = interaction.guild;
       const platform =
-        guild.id === XBOX_GUILD_ID
-          ? "xbox"
-          : guild.id === PLAYSTATION_GUILD_ID
-          ? "playstation"
-          : null;
+        guild.id === XBOX_GUILD_ID ? "xbox" :
+        guild.id === PLAYSTATION_GUILD_ID ? "playstation" : null;
   
       if (!platform) {
-        return interaction.editReply({
-          content: "❌ Unsupported server (not Xbox or PlayStation).",
-          ephemeral: true,
-        });
+        return interaction.editReply({ content: "❌ Unsupported server (not Xbox or PlayStation)." });
       }
   
       const member = await guild.members.fetch(user.id).catch(() => null);
       if (!member) {
-        return interaction.editReply({
-          content: "❌ Could not find the member.",
-          ephemeral: true,
-        });
+        return interaction.editReply({ content: "❌ Could not find the member." });
       }
   
       const departmentRoles = Object.entries(roleMappings[department]);
-  
       console.log("🧠 Member roles:", member.roles.cache.map(r => `${r.name} (${r.id})`));
       console.log("📌 Checking department roles:", departmentRoles.map(([rank, obj]) => `${rank}: ${obj[platform].roleId}`));
   
-      // 🔍 Find current role from highest to lowest
       let currentIndex = -1;
       for (let i = departmentRoles.length - 1; i >= 0; i--) {
         const [, roleObj] = departmentRoles[i];
@@ -71,45 +61,39 @@ const {
       }
   
       if (currentIndex === -1 || currentIndex === departmentRoles.length - 1) {
-        return interaction.editReply({
-          content: "❌ Cannot promote — not in a valid rank or already at top rank.",
-          ephemeral: true,
-        });
+        return interaction.editReply({ content: "❌ Cannot promote — not in a valid rank or already at top rank." });
       }
   
       const [currentRank, currentRole] = departmentRoles[currentIndex];
       const [nextRank, nextRole] = departmentRoles[currentIndex + 1];
   
-      // 🔁 Remove all department roles first
       for (const [, roleObj] of departmentRoles) {
         await member.roles.remove(roleObj[platform].roleId).catch(() => {});
       }
-  
-      // ✅ Add new role
       await member.roles.add(nextRole[platform].roleId).catch(() => {});
   
-      // 🎖 Assign next available callsign in range
       const range = nextRole[platform].range;
       const [startStr, endStr] = range.split("-").map(str => str.replace(/[^\d]/g, "").trim());
       const start = parseInt(startStr, 10);
       const end = parseInt(endStr || startStr, 10);
-      
-  
       const prefix = range.match(/[A-Za-z\-]+/g)?.[0]?.trim() || "";
-      let assignedNumber;
+  
       console.log(`🔍 Checking callsign range for ${department}: ${prefix}${start} - ${prefix}${end}`);
-      const used = await Callsign.find({ department }).sort({ number: 1 });
-      console.log("📄 Already assigned callsigns:", used.map(c => `${c.number}`));
+      const usedNumbers = new Set(
+        (await Callsign.find({ department })).map(c => c.number)
+      );
+      console.log("📄 Already assigned callsigns:", Array.from(usedNumbers).sort((a, b) => a - b));
+  
+      let assignedNumber = null;
       for (let i = start; i <= end; i++) {
-        const existing = await Callsign.findOne({ department, number: i });
-        if (!existing) {
+        if (!usedNumbers.has(i)) {
           assignedNumber = i;
           break;
         }
       }
   
       if (!assignedNumber) {
-        return interaction.editReply({ content: "❌ No available callsigns left.", ephemeral: true });
+        return interaction.editReply({ content: "❌ No available callsigns left." });
       }
   
       await Callsign.findOneAndUpdate(
@@ -133,7 +117,7 @@ const {
         .setFooter({ text: "Prime RP Utilities • Promote" })
         .setTimestamp();
   
-        return interaction.editReply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed] });
     },
   };
   
