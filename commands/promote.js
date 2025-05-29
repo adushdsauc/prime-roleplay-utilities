@@ -90,9 +90,10 @@ const {
   
       // 🎖 Assign next available callsign in range
       const range = nextRole[platform].range;
-      const [start, end] = range.includes("-")
-        ? range.replace(/[A-Za-z]/g, "").split("-").map(n => parseInt(n.trim()))
-        : [parseInt(range.replace(/[^\d]/g, "")), parseInt(range.replace(/[^\d]/g, ""))];
+      const [startStr, endStr] = range.split("-").map(str => str.replace(/[^\d]/g, "").trim());
+      const start = parseInt(startStr, 10);
+      const end = parseInt(endStr || startStr, 10);
+      
   
       const prefix = range.match(/[A-Za-z\-]+/g)?.[0]?.trim() || "";
       let assignedNumber;
