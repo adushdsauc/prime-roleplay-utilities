@@ -117,9 +117,11 @@ const {
       );
   
       const callsign = `${prefix}${assignedNumber}`;
-      await member.setNickname(`${callsign} | ${user.username}`).catch((err) => {
+      const newNickname = `${callsign} | ${user.username}`.slice(0, 32);
+      await member.setNickname(newNickname).catch(err => {
         console.warn("⚠️ Failed to update nickname:", err.message);
-      });        
+      });
+        
       const embed = new EmbedBuilder()
         .setTitle("📈 Promotion Successful")
         .setDescription(`<@${user.id}> was promoted to **${nextRank}**`)
