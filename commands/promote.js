@@ -39,7 +39,7 @@ const {
     async execute(interaction) {
       await interaction.deferReply({ ephemeral: true });
 
-      const member = await interaction.guild.members.fetch(interaction.user.id);
+      const member = await guild.members.fetch(user.id).catch(() => null);
 
       const hasStaffRole = STAFF_ROLE_IDS.some(roleId =>
         member.roles.cache.has(roleId)
