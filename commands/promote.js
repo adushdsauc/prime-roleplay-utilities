@@ -117,10 +117,21 @@ const {
       );
   
       const callsign = `${prefix}${assignedNumber}`;
+      console.log("🔎 Attempting to set nickname...");
+console.log("🔎 Bot highest role position:", guild.members.me.roles.highest.position);
+console.log("🔎 Member highest role position:", member.roles.highest.position);
+console.log("🔎 Current nickname:", member.nickname);
+console.log("🔎 Desired nickname:", `${callsign} | ${user.username}`.slice(0, 32));
+
       const newNickname = `${callsign} | ${user.username}`.slice(0, 32);
-      await member.setNickname(newNickname).catch(err => {
-        console.warn("⚠️ Failed to update nickname:", err.message);
-      });
+      if (member.nickname !== newNickname) {
+        await member.setNickname(newNickname).catch(err => {
+          console.warn("⚠️ Failed to update nickname:", err.message);
+        });
+      } else {
+        console.log("✅ Nickname is already correct, skipping update.");
+      }
+      
         
       const embed = new EmbedBuilder()
         .setTitle("📈 Promotion Successful")
