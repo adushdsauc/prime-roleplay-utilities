@@ -47,10 +47,14 @@ const {
       console.log("🧠 Member roles:", member.roles.cache.map(r => `${r.name} (${r.id})`));
       console.log("📌 Checking department roles:", departmentRoles.map(([rank, obj]) => `${rank}: ${obj[platform].roleId}`));
 
-      // Find user's current rank
-      const currentIndex = departmentRoles.findIndex(([_, roleObj]) => {
-        return member.roles.cache.has(roleObj[platform].roleId);
-      });
+      let currentIndex = -1;
+      for (let i = departmentRoles.length - 1; i >= 0; i--) {
+        const [, roleObj] = departmentRoles[i];
+        if (member.roles.cache.has(roleObj[platform].roleId)) {
+          currentIndex = i;
+          break;
+        }
+      }      
   
       if (currentIndex === -1 || currentIndex === departmentRoles.length - 1) {
         return interaction.reply({ content: "❌ Cannot promote — either not in a valid rank or already at top rank.", ephemeral: true });
