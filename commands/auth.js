@@ -25,7 +25,7 @@ module.exports = {
       .setDescription(`[Click here to authenticate](${AUTH_URL}) through Discord.\nThis verifies your identity and allows you to access roleplay tools.`)
       .addFields({ name: "Sent By", value: `<@${requester.id}> (${requester.user.tag})` })
       .setColor(0x00B0F4)
-      .setFooter({ text: "Prime RP Assistant • OAuth Verification" })
+      .setFooter({ text: "Prime Roleplay Security • OAuth Verification" })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] }); // Not ephemeral = public in channel
