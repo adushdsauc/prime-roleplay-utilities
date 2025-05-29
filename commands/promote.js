@@ -8,6 +8,14 @@ const {
   
   const XBOX_GUILD_ID = "1372312806107512894";
   const PLAYSTATION_GUILD_ID = "1369495333574545559";
+  const STAFF_ROLE_IDS = [
+    "1372312806157717556", 
+    "1372312806191399024",
+    "1372312806212239406",
+    "1370884299712233592",  
+    "1370884306964185138",
+    "1370968063431671969"
+  ];
   
   module.exports = {
     data: new SlashCommandBuilder()
@@ -30,19 +38,32 @@ const {
   
     async execute(interaction) {
       await interaction.deferReply({ ephemeral: true });
-  
+
+      const member = await interaction.guild.members.fetch(interaction.user.id);
+
+      const hasStaffRole = STAFF_ROLE_IDS.some(roleId =>
+        member.roles.cache.has(roleId)
+      );
+    
+      if (!hasStaffRole) {
+        return interaction.editReply({
+          content: "❌ You do not have permission to use this command.",
+          ephemeral: true
+        });
+      }
+    
       const user = interaction.options.getUser("user");
       const department = interaction.options.getString("department");
       const guild = interaction.guild;
       const platform =
         guild.id === XBOX_GUILD_ID ? "xbox" :
         guild.id === PLAYSTATION_GUILD_ID ? "playstation" : null;
-  
+        
+
       if (!platform) {
         return interaction.editReply({ content: "❌ Unsupported server (not Xbox or PlayStation)." });
       }
   
-      const member = await guild.members.fetch(user.id).catch(() => null);
       if (!member) {
         return interaction.editReply({ content: "❌ Could not find the member." });
       }
