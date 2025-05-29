@@ -10,8 +10,6 @@ module.exports = async function postApplication({ client, user, department, plat
 
   console.log("Fetched channel type:", forum?.type); // Should log 15 for forum
   if (!forum || forum.type !== 15) return console.error("❌ Not a forum channel.");
-const roleId = '1375605232226140300';
-  onst roleMention = `<@&${roleId}>`;
   const title = `${user.username} - ${department.toUpperCase()} Application`;
 
   const fields = [
@@ -55,7 +53,7 @@ const roleId = '1375605232226140300';
     name: title,
     appliedTags: ['1375025290362753074'], // 🆕 New Application
     message: {
-      content: `${roleMention} New application received.`,
+      content: `<@&${1375605232226140300}> New application received.`,
       embeds: [embed],
       components: [buttons],
     },
