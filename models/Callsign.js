@@ -1,14 +1,13 @@
-// models/Callsign.js
 const mongoose = require("mongoose");
 
-const callsignSchema = new mongoose.Schema({
-  department: { type: String, required: true },
-  number: { type: Number, required: true },
+const CallsignSchema = new mongoose.Schema({
   discordId: { type: String, required: true },
-  platform: { type: String, required: true }, // <-- Add this
-}, { timestamps: true });
+  department: { type: String, required: true },
+  platform: { type: String, required: true }, // xbox or playstation
+  number: { type: Number, required: true }
+});
 
-callsignSchema.index({ department: 1, number: 1 }, { unique: true });
-callsignSchema.index({ discordId: 1, department: 1, platform: 1 }, { unique: true });
+// ✅ This ensures uniqueness across department + platform + number
+CallsignSchema.index({ department: 1, number: 1, platform: 1 }, { unique: true });
 
-module.exports = mongoose.model("Callsign", callsignSchema);
+module.exports = mongoose.model("Callsign", CallsignSchema);
