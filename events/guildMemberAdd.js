@@ -31,7 +31,7 @@ const ROLE_IDS = {
   }
 };
 
-async function generateCallsign(discordId, department) {
+async function generateCallsign(discordId, department, platform) {
   const ranges = {
     Civilian: { start: 1250, prefix: "Civ" },
     PSO: { start: 1251, end: 2000, prefix: "C" },
@@ -40,7 +40,7 @@ async function generateCallsign(discordId, department) {
   const range = ranges[department];
   if (!range) throw new Error("Unknown department");
 
-  const existing = await Callsign.find({ department });
+  const existing = await Callsign.find({ department, platform });
   const used = new Set(existing.map(c => c.number));
   let number = range.start;
   const max = range.end || Infinity;
@@ -48,7 +48,7 @@ async function generateCallsign(discordId, department) {
   while (used.has(number) && number <= max) number++;
   if (number > max) throw new Error("No available callsigns");
 
-  await Callsign.create({ discordId, department, number });
+  await Callsign.create({ discordId, department, number, platform });
   return `${range.prefix}-${number}`;
 }
 
@@ -72,8 +72,10 @@ module.exports = {
 
     const guildId = member.guild.id;
     const config = ROLE_IDS[guildId];
-    if (!config) {
-      console.warn("❌ No ROLE_IDS config for this guild:", guildId);
+    const platform = guildId === XBOX_GUILD_ID ? "xbox" : guildId === PLAYSTATION_GUILD_ID ? "playstation" : null;
+
+    if (!config || !platform) {
+      console.warn("❌ No ROLE_IDS config or platform for guild:", guildId);
       return;
     }
 
@@ -130,7 +132,7 @@ module.exports = {
 
     let callsign;
     try {
-      callsign = await generateCallsign(member.id, department);
+      callsign = await generateCallsign(member.id, department, platform);
       console.log("🪪 Callsign generated:", callsign);
     } catch (err) {
       console.error("❌ Failed to generate callsign:", err);
