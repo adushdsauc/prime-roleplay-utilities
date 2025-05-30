@@ -1,4 +1,3 @@
-// commands/callsign-manually-add.js
 const {
   SlashCommandBuilder,
   PermissionFlagsBits,
@@ -47,7 +46,7 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: 64 }); // Replaces deprecated `ephemeral: true`
 
     const user = interaction.options.getUser("user");
     const department = interaction.options.getString("department");
@@ -70,6 +69,14 @@ module.exports = {
 
     console.log(`🔍 Assigning ${department} callsign on ${platform}: ${prefix}${start}-${end}`);
 
+    // 🔁 Check if user already has a callsign in this department + platform
+    const existing = await Callsign.findOne({ discordId: user.id, department, platform });
+    if (existing) {
+      return interaction.editReply({
+        content: `❌ <@${user.id}> already has a callsign in **${department}** on **${platform}**: \`${prefix}${existing.number}\``
+      });
+    }
+
     const usedNumbers = new Set(
       (await Callsign.find({ department, platform })).map(c => c.number)
     );
@@ -88,19 +95,21 @@ module.exports = {
 
     const callsign = `${prefix}${assignedNumber}`;
 
-    // ✅ Upsert the new callsign
-    await Callsign.findOneAndUpdate(
-      { discordId: user.id, department, platform },
-      { discordId: user.id, department, platform, number: assignedNumber },
-      { upsert: true, new: true }
-    );
+    await Callsign.create({
+      discordId: user.id,
+      department,
+      platform,
+      number: assignedNumber
+    });
 
-    // ✅ Apply the lowest rank roles
+    // 🎖️ Apply lowest rank roles
     for (const roleId of config[platform]) {
-      await member.roles.add(roleId).catch(() => {});
+      await member.roles.add(roleId).catch(err =>
+        console.warn(`⚠️ Failed to assign role ${roleId}:`, err.message)
+      );
     }
 
-    // ✅ Set nickname if needed
+    // 🏷️ Update nickname
     const newNickname = `${callsign} | ${user.username}`.slice(0, 32);
     if (member.nickname !== newNickname) {
       try {
