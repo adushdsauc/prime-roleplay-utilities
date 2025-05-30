@@ -1,4 +1,3 @@
-// commands/promote.js
 const {
   SlashCommandBuilder,
   PermissionFlagsBits,
@@ -35,38 +34,42 @@ module.exports = {
           { name: "Civilian", value: "Civilian" }
         )
     )
+    .addStringOption(option =>
+      option.setName("reason")
+        .setDescription("Reason for promotion")
+        .setRequired(true)
+    )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply();
 
     const user = interaction.options.getUser("user");
     const department = interaction.options.getString("department");
+    const reason = interaction.options.getString("reason");
     const guild = interaction.guild;
 
     const commandUser = await guild.members.fetch(interaction.user.id);
-    const hasStaffRole = STAFF_ROLE_IDS.some(roleId => commandUser.roles.cache.has(roleId));
+    const hasStaffRole = STAFF_ROLE_IDS.some(roleId =>
+      commandUser.roles.cache.has(roleId)
+    );
     if (!hasStaffRole) {
-      return interaction.editReply({ content: "❌ You do not have permission to use this command." });
+      return interaction.editReply({
+        content: "❌ You do not have permission to use this command.",
+        ephemeral: true
+      });
     }
 
+    const member = await guild.members.fetch(user.id).catch(() => null);
     const platform =
       guild.id === XBOX_GUILD_ID ? "xbox" :
       guild.id === PLAYSTATION_GUILD_ID ? "playstation" : null;
 
-    if (!platform) {
-      return interaction.editReply({ content: "❌ Unsupported server (not Xbox or PlayStation)." });
-    }
-
-    const member = await guild.members.fetch(user.id).catch(() => null);
-    if (!member) {
-      return interaction.editReply({ content: "❌ Could not find the member." });
+    if (!platform || !member) {
+      return interaction.editReply({ content: "❌ Could not determine platform or member not found." });
     }
 
     const departmentRoles = Object.entries(roleMappings[department]);
-    console.log("🧠 Member roles:", member.roles.cache.map(r => `${r.name} (${r.id})`));
-    console.log("📌 Checking department roles:", departmentRoles.map(([rank, obj]) => `${rank}: ${obj[platform].roleId}`));
-
     let currentIndex = -1;
     for (let i = departmentRoles.length - 1; i >= 0; i--) {
       const [, roleObj] = departmentRoles[i];
@@ -80,6 +83,7 @@ module.exports = {
       return interaction.editReply({ content: "❌ Cannot promote — not in a valid rank or already at top rank." });
     }
 
+    const [currentRank, currentRole] = departmentRoles[currentIndex];
     const [nextRank, nextRole] = departmentRoles[currentIndex + 1];
 
     for (const [, roleObj] of departmentRoles) {
@@ -88,21 +92,20 @@ module.exports = {
     await member.roles.add(nextRole[platform].roleId).catch(() => {});
 
     const range = nextRole[platform].range;
-    console.log(`📦 Raw range string: ${range}`);
-
     const prefix = range.match(/[A-Za-z\-]+/g)?.[0]?.trim() || "";
     const matches = range.match(/\d+/g);
-    if (!matches || matches.length === 0) {
+    let start = null;
+    let end = null;
+    if (matches && matches.length >= 1) {
+      start = parseInt(matches[0], 10);
+      end = parseInt(matches[1] || matches[0], 10);
+    } else {
       return interaction.editReply({ content: "❌ Invalid callsign range format in roleMappings." });
     }
 
-    const start = parseInt(matches[0], 10);
-    const end = parseInt(matches[1] || matches[0], 10);
-    console.log(`🔍 Checking callsign range for ${department}: ${prefix}${start} - ${prefix}${end}`);
-
-    const usedNumbers = new Set((await Callsign.find({ department })).map(c => c.number));
-    console.log("📄 Already assigned callsigns:", Array.from(usedNumbers).sort((a, b) => a - b));
-
+    const usedNumbers = new Set(
+      (await Callsign.find({ department, platform })).map(c => c.number)
+    );
     let assignedNumber = null;
     for (let i = start; i <= end; i++) {
       if (!usedNumbers.has(i)) {
@@ -112,30 +115,24 @@ module.exports = {
     }
 
     if (!assignedNumber) {
-      return interaction.editReply({ content: "❌ No available callsigns left." });
+      return interaction.editReply({ content: `❌ No available callsigns left for ${department} on ${platform}.` });
     }
 
+    const callsign = `${prefix}${assignedNumber}`;
+
     await Callsign.findOneAndUpdate(
-      { discordId: user.id, department },
-      { discordId: user.id, department, number: assignedNumber },
+      { discordId: user.id, department, platform },
+      { discordId: user.id, department, platform, number: assignedNumber },
       { upsert: true, new: true }
     );
 
-    const callsign = `${prefix}${assignedNumber}`;
     const newNickname = `${callsign} | ${user.username}`.slice(0, 32);
-
-    console.log("🔎 Attempting to set nickname...");
-    console.log("🔎 Bot highest role position:", guild.members.me.roles.highest.position);
-    console.log("🔎 Member highest role position:", member.roles.highest.position);
-    console.log("🔎 Current nickname:", member.nickname);
-    console.log("🔎 Desired nickname:", newNickname);
-
     if (member.nickname !== newNickname) {
-      await member.setNickname(newNickname).catch(err => {
+      try {
+        await member.setNickname(newNickname);
+      } catch (err) {
         console.warn("⚠️ Failed to update nickname:", err.message);
-      });
-    } else {
-      console.log("✅ Nickname is already correct, skipping update.");
+      }
     }
 
     const embed = new EmbedBuilder()
@@ -144,12 +141,14 @@ module.exports = {
       .addFields(
         { name: "Platform", value: platform.toUpperCase(), inline: true },
         { name: "Department", value: department, inline: true },
-        { name: "Callsign", value: callsign, inline: true }
+        { name: "Callsign", value: callsign, inline: true },
+        { name: "Reason", value: reason, inline: false },
+        { name: "Promoted By", value: `<@${interaction.user.id}>`, inline: false }
       )
       .setColor(0x2ecc71)
       .setFooter({ text: "Prime RP Utilities • Promote" })
       .setTimestamp();
 
     return interaction.editReply({ embeds: [embed] });
-  },
+  }
 };
