@@ -1,4 +1,3 @@
-// commands/demote.js
 const {
   SlashCommandBuilder,
   PermissionFlagsBits,
@@ -22,12 +21,11 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("demote")
     .setDescription("Demote a user to the previous rank in their department")
-    .addUserOption((option) =>
+    .addUserOption(option =>
       option.setName("user").setDescription("User to demote").setRequired(true)
     )
-    .addStringOption((option) =>
-      option
-        .setName("department")
+    .addStringOption(option =>
+      option.setName("department")
         .setDescription("Department to demote in")
         .setRequired(true)
         .addChoices(
@@ -36,13 +34,23 @@ module.exports = {
           { name: "Civilian", value: "Civilian" }
         )
     )
+    .addStringOption(option =>
+      option.setName("reason")
+        .setDescription("Reason for demotion")
+        .setRequired(true)
+    )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply();
 
-    const commandUser = await interaction.guild.members.fetch(interaction.user.id);
-    const hasStaffRole = STAFF_ROLE_IDS.some((roleId) =>
+    const user = interaction.options.getUser("user");
+    const department = interaction.options.getString("department");
+    const reason = interaction.options.getString("reason");
+    const guild = interaction.guild;
+
+    const commandUser = await guild.members.fetch(interaction.user.id);
+    const hasStaffRole = STAFF_ROLE_IDS.some(roleId =>
       commandUser.roles.cache.has(roleId)
     );
     if (!hasStaffRole) {
@@ -52,29 +60,16 @@ module.exports = {
       });
     }
 
-    const user = interaction.options.getUser("user");
-    const department = interaction.options.getString("department");
-    const guild = interaction.guild;
-    const platform =
-      guild.id === XBOX_GUILD_ID
-        ? "xbox"
-        : guild.id === PLAYSTATION_GUILD_ID
-        ? "playstation"
-        : null;
-
-    if (!platform) {
-      return interaction.editReply({
-        content: "❌ Unsupported server (not Xbox or PlayStation).",
-      });
-    }
-
     const member = await guild.members.fetch(user.id).catch(() => null);
-    if (!member) {
-      return interaction.editReply({ content: "❌ Could not find the member." });
+    const platform =
+      guild.id === XBOX_GUILD_ID ? "xbox" :
+      guild.id === PLAYSTATION_GUILD_ID ? "playstation" : null;
+
+    if (!platform || !member) {
+      return interaction.editReply({ content: "❌ Could not determine platform or member not found." });
     }
 
     const departmentRoles = Object.entries(roleMappings[department]);
-
     let currentIndex = -1;
     for (let i = departmentRoles.length - 1; i >= 0; i--) {
       const [, roleObj] = departmentRoles[i];
@@ -86,7 +81,7 @@ module.exports = {
 
     if (currentIndex === -1 || currentIndex === 0) {
       return interaction.editReply({
-        content: "❌ Cannot demote — not in a valid rank or already at lowest rank.",
+        content: "❌ Cannot demote — not in a valid rank or already at lowest rank."
       });
     }
 
@@ -108,12 +103,12 @@ module.exports = {
       end = parseInt(matches[1] || matches[0], 10);
     } else {
       return interaction.editReply({
-        content: "❌ Invalid callsign range format in roleMappings.",
+        content: "❌ Invalid callsign range format in roleMappings."
       });
     }
 
     const usedNumbers = new Set(
-      (await Callsign.find({ department })).map((c) => c.number)
+      (await Callsign.find({ department, platform })).map(c => c.number)
     );
     let assignedNumber = null;
     for (let i = start; i <= end; i++) {
@@ -124,21 +119,24 @@ module.exports = {
     }
 
     if (!assignedNumber) {
-      return interaction.editReply({ content: "❌ No available callsigns left." });
+      return interaction.editReply({ content: `❌ No available callsigns left for ${department} on ${platform}.` });
     }
 
+    const callsign = `${prefix}${assignedNumber}`;
+
     await Callsign.findOneAndUpdate(
-      { discordId: user.id, department },
-      { discordId: user.id, department, number: assignedNumber },
+      { discordId: user.id, department, platform },
+      { discordId: user.id, department, platform, number: assignedNumber },
       { upsert: true, new: true }
     );
 
-    const callsign = `${prefix}${assignedNumber}`;
     const newNickname = `${callsign} | ${user.username}`.slice(0, 32);
     if (member.nickname !== newNickname) {
-      await member.setNickname(newNickname).catch((err) => {
+      try {
+        await member.setNickname(newNickname);
+      } catch (err) {
         console.warn("⚠️ Failed to update nickname:", err.message);
-      });
+      }
     }
 
     const embed = new EmbedBuilder()
@@ -147,12 +145,14 @@ module.exports = {
       .addFields(
         { name: "Platform", value: platform.toUpperCase(), inline: true },
         { name: "Department", value: department, inline: true },
-        { name: "Callsign", value: callsign, inline: true }
+        { name: "Callsign", value: callsign, inline: true },
+        { name: "Reason", value: reason, inline: false },
+        { name: "Demoted By", value: `<@${interaction.user.id}>`, inline: false }
       )
       .setColor(0xe74c3c)
       .setFooter({ text: "Prime RP Utilities • Demote" })
       .setTimestamp();
 
     return interaction.editReply({ embeds: [embed] });
-  },
+  }
 };
