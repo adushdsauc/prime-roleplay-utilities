@@ -26,25 +26,42 @@ const ROLE_IDS = {
   }
 };
 
+// ✅ Optimized callsign generator
 async function generateCallsign(discordId, department, platform) {
   const ranges = {
-    Civilian: { start: 1250, prefix: "Civ" },
+    Civilian: { start: 1250, end: 1750, prefix: "Civ" },
     PSO: { start: 1251, end: 2000, prefix: "C" },
     SAFR: { start: 1, end: 100, prefix: "FF-R" },
   };
+
   const range = ranges[department];
-  if (!range) throw new Error("Unknown department");
+  if (!range) throw new Error(`Unknown department: ${department}`)
+  if (!range) throw new Error(`Unknown department: ${department}`);
 
   const existing = await Callsign.find({ department, platform });
-  const used = new Set(existing.map(c => c.number));
+  const usedNumbers = new Set(
+    existing.map(cs => {
+      const match = cs.number.toString().match(/\d+/); // ensure it's treated as string
+      return match ? parseInt(match[0]) : null;
+    }).filter(Boolean)
+  );
+
   let number = range.start;
-  const max = range.end || Infinity;
+  while (usedNumbers.has(number) && number <= range.end) {
+    number++;
+  }
 
-  while (used.has(number) && number <= max) number++;
-  if (number > max) throw new Error("No available callsigns");
+  if (number > range.end) throw new Error("No available callsigns in range");
 
-  await Callsign.create({ discordId, department, number, platform });
-  return `${range.prefix}-${number}`;
+  const fullCallsign = `${range.prefix}-${number}`;
+  await Callsign.create({
+    discordId,
+    department,
+    number, // ✅ Stored as a Number in Mongo
+    platform
+  });
+
+  return fullCallsign;
 }
 
 module.exports = {
@@ -89,6 +106,7 @@ module.exports = {
       console.error("❌ Error in invite validation:", err);
     }
 
+    // Set default department
     let department = "Civilian";
     const accepted = await AcceptedUser.findOne({ discordId: member.id });
     console.log("🔍 AcceptedUser record:", accepted);
@@ -102,6 +120,7 @@ module.exports = {
       );
     }
 
+    // Assign roles
     const roleIds = [...(config.always || []), ...(config[department] || [])];
     for (const roleId of roleIds) {
       const role = member.guild.roles.cache.get(roleId);
@@ -112,6 +131,7 @@ module.exports = {
       }
     }
 
+    // Generate and assign callsign
     let callsign;
     try {
       callsign = await generateCallsign(member.id, department, platform);
@@ -121,13 +141,14 @@ module.exports = {
       callsign = "Pending";
     }
 
+    // Set nickname
     const baseName = member.user.username;
     const nickname = `${callsign} | ${baseName}`;
     await member.setNickname(nickname).catch(err => {
       console.warn(`❌ Failed to set nickname for ${member.user.tag}: ${err.message}`);
     });
-    console.log("✏️ Nickname set attempt:", nickname);
 
+    // Log join
     const logChannelId = LOG_CHANNELS[guildId];
     const logChannel = member.guild.channels.cache.get(logChannelId);
     if (logChannel) {
@@ -141,7 +162,6 @@ module.exports = {
         .setColor(0x00b0f4)
         .setTimestamp();
       logChannel.send({ embeds: [embed] }).catch(console.error);
-      console.log("📨 Log channel send attempt complete");
     }
 
     console.log(`✅ ${member.user.tag} joined ${department}, callsign ${callsign}`);
