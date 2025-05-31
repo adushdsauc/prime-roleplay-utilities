@@ -2,7 +2,7 @@
 // File: applicationSessionHandler.js
 
 const path = require("path");
-const gradeApplication = require("../utils/gradeApplication");
+const gradeApplication = require("../../utils/gradeApplication");
 const AuthUser = require("./backend/models/authUser");
 const createSecureInvite = require("./utils/createSecureInvite");
 const AcceptedUser = require("./models/AcceptedUser");
