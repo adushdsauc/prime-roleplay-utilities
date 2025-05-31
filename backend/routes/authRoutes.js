@@ -1,12 +1,14 @@
-const express = require("express");
-const axios = require("axios");
-const router = express.Router();
-const { URLSearchParams } = require("url");
-const AuthUser = require("../models/authUser");
-const client = require("../../index.js"); // or the correct relative path to your bot file
+// ✅ Modified handleAnswer() to match the exact flow of your manual approval system
+// File: applicationSessionHandler.js
 
-const DISCORD_API = "https://discord.com/api";
-const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
+const path = require("path");
+const gradeApplication = require("./utils/gradeApplication");
+const AuthUser = require("./backend/models/authUser");
+const createSecureInvite = require("./utils/createSecureInvite");
+const AcceptedUser = require("./models/AcceptedUser");
+const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require("discord.js");
+
+const sessions = new Map();
 
 const ALLOWED_GUILDS = [
   "1372312806107512894",
@@ -19,124 +21,198 @@ const ALLOWED_GUILDS = [
   "1368615880359153735"
 ];
 
-// Step 1: Send user to Discord OAuth2
-router.get("/login", (req, res) => {
-  const isBypass = req.query.bypass === "true";
+function loadQuestions(department) {
+  const filePath = path.join(__dirname, `./data/questions/${department}.js`);
+  return require(filePath);
+}
 
-  const params = new URLSearchParams({
-    client_id: CLIENT_ID,
-    redirect_uri: REDIRECT_URI, // Must match exactly what's in Discord Dev Portal
-    response_type: "code",
-    scope: "identify guilds",
-    state: isBypass ? "bypass" : "standard"
+function startApplication(userId, department, platform) {
+  const questions = loadQuestions(department);
+  sessions.set(userId, {
+    department,
+    platform,
+    currentIndex: 0,
+    answers: [],
+    questions
   });
 
-  res.redirect(`${DISCORD_API}/oauth2/authorize?${params.toString()}`);
-});
+  return buildQuestionMenu(userId);
+}
 
-// Step 2: Handle Discord OAuth2 callback
-router.get("/callback", async (req, res) => {
-  const code = req.query.code;
-  const isBypass = req.query.state === "bypass";
-  if (!code) return res.send("❌ Missing code.");
+function buildQuestionMenu(userId) {
+  const session = sessions.get(userId);
+  const currentQ = session.questions[session.currentIndex];
 
-  try {
-    // Exchange code for access token
-    const data = new URLSearchParams({
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      grant_type: "authorization_code",
-      code,
-      redirect_uri: REDIRECT_URI
-    });
-
-    const tokenRes = await axios.post(`${DISCORD_API}/oauth2/token`, data.toString(), {
-      headers: { "Content-Type": "application/x-www-form-urlencoded" }
-    });
-
-    const { access_token, token_type } = tokenRes.data;
-
-    // Get user info
-    const userRes = await axios.get(`${DISCORD_API}/users/@me`, {
-      headers: { Authorization: `${token_type} ${access_token}` }
-    });
-
-    const user = userRes.data;
-
-    // Get user guilds
-    const guildRes = await axios.get(`${DISCORD_API}/users/@me/guilds`, {
-      headers: { Authorization: `${token_type} ${access_token}` }
-    });
-
-    // Filter for unauthorized RP guilds
-   if (!isBypass) {
-  const flagged = guildRes.data.filter(g =>
-    g.name.toLowerCase().includes("roleplay") &&
-    !ALLOWED_GUILDS.includes(g.id)
+  const row = new ActionRowBuilder().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId(`app_question_${userId}`)
+      .setPlaceholder("Select your answer")
+      .addOptions(
+        currentQ.options.map((opt) => ({
+          label: opt,
+          value: opt
+        }))
+      )
   );
 
-  if (flagged.length > 0) {
-    // ✅ ONLY log here, when actually blocked
-    const failLogChannel = client.channels.cache.get(process.env.AUTH_FAIL_LOG_CHANNEL);
-    if (failLogChannel) {
-      const guildList = flagged
-        .map(g => `• ${g.name || "Unknown Guild"} (${g.id})`)
-        .join("\n");
+  const embed = new EmbedBuilder()
+    .setTitle(`Question ${session.currentIndex + 1}`)
+    .setDescription(currentQ.question)
+    .setColor(0x111111);
 
-      failLogChannel.send({
-        embeds: [
-          {
-            title: "❌ OAuth Blocked: Unauthorized RP Servers",
-            description: `User: <@${user.id}> (${user.username})\nFlagged Guilds:\n${guildList}`,
-            color: 0xff0000,
-            timestamp: new Date().toISOString()
+  return { embed, row };
+}
+
+async function handleAnswer(interaction) {
+  const userId = interaction.user.id;
+  const selected = interaction.values[0];
+  const session = sessions.get(userId);
+
+  session.answers.push(selected);
+  session.currentIndex++;
+
+  if (session.currentIndex >= session.questions.length) {
+    const result = gradeApplication(session.answers, session.questions);
+    const passed = result.passed;
+
+    const reviewEmbed = new EmbedBuilder()
+      .setTitle(passed ? "<:checkmark:1378190549428994058> You have passed!" : "❌ Application Failed")
+      .setDescription(`Score: **${result.score}/10**\nPlatform: **${session.platform}**\nDepartment: **${session.department.toUpperCase()}**`)
+      .setColor(0x111111);
+
+    await interaction.update({ embeds: [reviewEmbed], components: [] });
+
+    if (!passed) return sessions.delete(userId);
+
+    await AcceptedUser.findOneAndUpdate(
+      { discordId: userId },
+      { discordId: userId, department: session.department },
+      { upsert: true, new: true }
+    );
+
+    const loginEmbed = new EmbedBuilder()
+      .setTitle("<:checkmark:1378190549428994058> You Passed!")
+      .setDescription("Please log in with Discord to verify and receive your invites.")
+      .addFields({ name: "Login", value: `[Click here to verify](${process.env.OAUTH_LOGIN_URL})` })
+      .setColor(0x111111);
+
+    await interaction.user.send({ embeds: [loginEmbed] });
+
+    // 🔄 Poll for verification
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      const verified = await AuthUser.findOne({ discordId: userId });
+      if (verified) {
+        clearInterval(interval);
+
+        const platformLabel = session.platform.charAt(0).toUpperCase() + session.platform.slice(1);
+        const invites = {};
+
+        invites.Economy = await createSecureInvite({
+          client: interaction.client,
+          guildId: process.env.ECONOMY_SERVER_ID,
+          userId,
+          platform: session.platform
+        });
+
+        const platformGuildId = process.env[`${session.platform.toUpperCase()}_SERVER_ID`];
+        invites[platformLabel] = await createSecureInvite({
+          client: interaction.client,
+          guildId: platformGuildId,
+          userId,
+          platform: session.platform
+        });
+
+        const inviteEmbed = new EmbedBuilder()
+          .setTitle("<:checkmark:1378190549428994058> Verified & Ready!")
+          .setDescription("Here are your one-time use invite links (valid for 24 hours):")
+          .addFields(
+            { name: `${platformLabel} Server`, value: invites[platformLabel] || "Invite failed." },
+            { name: "Economy Server", value: invites.Economy || "Invite failed." }
+          )
+          .setColor(0x111111);
+
+        await interaction.user.send({ embeds: [inviteEmbed] });
+
+        const logChannelId = process.env.APPLICATION_LOG_CHANNEL_ID;
+        const logChannel = await interaction.client.channels.fetch(logChannelId).catch(() => null);
+        if (logChannel?.isTextBased()) {
+          const logEmbed = new EmbedBuilder()
+            .setTitle("📅 New Auto-Approved Application")
+            .setDescription(`<@${userId}> has been auto-approved and verified.`)
+            .addFields(
+              { name: "Platform", value: platformLabel, inline: true },
+              { name: "Department", value: session.department, inline: true },
+              { name: "Score", value: `${result.score}/10`, inline: true },
+              { name: "Answers", value: session.questions.map((q, i) => `**Q${i + 1}:** ${q.question}\n**A:** ${session.answers[i]}`).join("\n\n").slice(0, 1024) }
+            )
+            .setColor(0x111111)
+            .setTimestamp();
+
+          await logChannel.send({ embeds: [logEmbed] });
+        }
+
+        const departmentMap = {
+          civilian: "Civilian",
+          pso: "PSO",
+          safr: "SAFR"
+        };
+        const department = departmentMap[session.department?.toLowerCase()] || "Civilian";
+
+        try {
+          await AcceptedUser.findOneAndUpdate(
+            { discordId: userId },
+            { discordId: userId, department },
+            { upsert: true, new: true }
+          );
+          console.log(`✅ Saved accepted user ${userId} to database with department ${department}`);
+        } catch (err) {
+          console.error("❌ Failed to save accepted user:", err);
+        }
+
+        const guildId = interaction.guildId;
+        const guild = await interaction.client.guilds.fetch(guildId).catch(() => null);
+        const member = await guild?.members.fetch(userId).catch(() => null);
+
+        if (member) {
+          const APPLIED_ROLE = "1368345426482167818";
+          const ACCEPTED_ROLE = "1368345401815465985";
+
+          try {
+            await member.roles.remove(APPLIED_ROLE);
+            await member.roles.add(ACCEPTED_ROLE);
+            console.log(`✅ Updated roles for ${userId}`);
+          } catch (err) {
+            console.error(`❌ Failed to update roles for ${userId}:`, err);
           }
-        ]
-      }).catch(console.error);
-    }
+        } else {
+          console.warn(`⚠️ Could not find guild member ${userId}`);
+        }
 
-    return res.send("It has been detected that you are apart of another roleplay server. Before you proceed please create a support ticket in Prime Network HQ server and provide a picture of your server list. Our team will assist you as soon as possible!");
+        sessions.delete(userId);
+        return;
+      }
+
+      if (++attempts > 18) {
+        clearInterval(interval);
+        await interaction.user.send({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle("<:Timer:1378190968536432691> Verification Timeout")
+              .setDescription("Your session expired. Please restart the application process.")
+              .setColor(0x111111)
+          ]
+        });
+        sessions.delete(userId);
+      }
+    }, 10000);
+  } else {
+    const next = buildQuestionMenu(userId);
+    await interaction.update({ embeds: [next.embed], components: [next.row] });
   }
 }
 
-    // Save to DB
-    await AuthUser.findOneAndUpdate(
-      { discordId: user.id },
-      {
-        discordId: user.id,
-        username: user.username,
-        accessToken: access_token,
-        tokenType: token_type
-      },
-      { upsert: true }
-    );
-    
-    const saved = await AuthUser.findOne({ discordId: user.id });
-console.log("✅ AuthUser saved:", saved);
-
-
-    return res.send(`
-      <html>
-        <head><title>Authentication Complete</title></head>
-        <body style="font-family:sans-serif; text-align:center; padding:40px;">
-          <h1 style="color:green;">✅ Authentication Complete</h1>
-          <p>${isBypass
-            ? "Staff will review your request shortly. You may now close this tab."
-            : "You are now verified. You may now close this tab."}</p>
-        </body>
-      </html>
-    `);
-
-} catch (err) {
-  console.error("OAuth error:", {
-    message: err?.message,
-    response: err?.response?.data,
-    stack: err?.stack
-  });
-
-  return res.send("❌ An error occurred during authentication.");
-}
-
-});
-
-module.exports = router;
+module.exports = {
+  startApplication,
+  handleAnswer,
+};
