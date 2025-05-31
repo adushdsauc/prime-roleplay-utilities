@@ -128,7 +128,7 @@ async function handleAnswer(interaction) {
         const logChannel = await interaction.client.channels.fetch(logChannelId).catch(() => null);
         if (logChannel?.isTextBased()) {
           const logEmbed = new EmbedBuilder()
-            .setTitle("📥 New Auto-Approved Application")
+            .setTitle("Application Log")
             .setDescription(`<@${userId}> has been auto-approved and verified.`)
             .addFields(
               { name: "Platform", value: platformLabel, inline: true },
