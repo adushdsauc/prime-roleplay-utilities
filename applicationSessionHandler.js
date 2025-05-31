@@ -67,25 +67,23 @@ async function handleAnswer(interaction) {
     const reviewEmbed = new EmbedBuilder()
       .setTitle(passed ? "<:checkmark:1378190549428994058> You have passed!" : "❌ Application Failed")
       .setDescription(`Score: **${result.score}/10**\nPlatform: **${session.platform}**\nDepartment: **${session.department.toUpperCase()}**`)
-      .setColor(passed ? 0x111111 : 0x111111);
+      .setColor(0x111111);
 
     await interaction.update({ embeds: [reviewEmbed], components: [] });
 
     if (!passed) return sessions.delete(userId);
 
-    // ✅ Save to AcceptedUser
     await AcceptedUser.findOneAndUpdate(
       { discordId: userId },
       { discordId: userId, department: session.department },
       { upsert: true, new: true }
     );
 
-    // ✅ Prompt authentication link
     const loginEmbed = new EmbedBuilder()
       .setTitle("<:checkmark:1378190549428994058> You Passed!")
       .setDescription("Please log in with Discord to verify and receive your invites.")
       .addFields({ name: "Login", value: `[Click here to verify](${process.env.OAUTH_LOGIN_URL})` })
-      .setColor(030303);
+      .setColor(0x111111);
 
     await interaction.user.send({ embeds: [loginEmbed] });
 
@@ -124,6 +122,26 @@ async function handleAnswer(interaction) {
           .setColor(0x111111);
 
         await interaction.user.send({ embeds: [inviteEmbed] });
+
+        // ✅ Log channel embed
+        const logChannelId = process.env.APPLICATION_LOG_CHANNEL_ID;
+        const logChannel = await interaction.client.channels.fetch(logChannelId).catch(() => null);
+        if (logChannel?.isTextBased()) {
+          const logEmbed = new EmbedBuilder()
+            .setTitle("📥 New Auto-Approved Application")
+            .setDescription(`<@${userId}> has been auto-approved and verified.`)
+            .addFields(
+              { name: "Platform", value: platformLabel, inline: true },
+              { name: "Department", value: session.department, inline: true },
+              { name: "Score", value: `${result.score}/10`, inline: true },
+              { name: "Answers", value: session.questions.map((q, i) => `**Q${i + 1}:** ${q.question}\n**A:** ${session.answers[i]}`).join("\n\n").slice(0, 1024) }
+            )
+            .setColor(0x111111)
+            .setTimestamp();
+
+          await logChannel.send({ embeds: [logEmbed] });
+        }
+
         sessions.delete(userId);
         return;
       }
