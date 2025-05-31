@@ -102,7 +102,6 @@ if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
   } catch (err) {
     console.error("❌ Failed to save accepted user:", err);
   }
-
   const guildId = interaction.guildId;
 const guild = await client.guilds.fetch(guildId).catch(() => null);
 const member = await guild?.members.fetch(userId).catch(() => null);
