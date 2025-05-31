@@ -306,7 +306,7 @@ await interaction.channel.send({ embeds: [confirmEmbed] });
       const { EmbedBuilder } = require("discord.js");
 
       const platformEmbed = new EmbedBuilder()
-        .setTitle("✅ Platform Selected")
+        .setTitle("<:checkmark:1378190549428994058> Platform Selected")
         .setDescription(`You selected **${platform.toUpperCase()}**.\n\nAre you ready to begin your **${department.toUpperCase()}** application?`)
         .setColor(0x111111);
       
