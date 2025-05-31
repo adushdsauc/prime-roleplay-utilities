@@ -10,9 +10,10 @@ const {
 const sessions = new Map();
 
 function loadQuestions(department) {
-  const filePath = path.join(__dirname, `../data/questions/${department}.js`);
-  return require(filePath);
-}
+    const filePath = path.join(__dirname, "data", "questions", `${department}.js`);
+    console.log("📦 Loading questions from:", filePath); // debug
+    return require(filePath);
+  }  
 
 function startApplication(userId, department, platform) {
   const questions = loadQuestions(department);
