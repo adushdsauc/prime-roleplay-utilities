@@ -47,7 +47,7 @@ function buildQuestionMenu(userId) {
   const embed = new EmbedBuilder()
     .setTitle(`📋 Question ${session.currentIndex + 1}`)
     .setDescription(currentQ.question)
-    .setColor(030303);
+    .setColor(0x111111);
 
   return { embed, row };
 }
@@ -67,7 +67,7 @@ async function handleAnswer(interaction) {
     const reviewEmbed = new EmbedBuilder()
       .setTitle(passed ? "✅ Application Passed" : "❌ Application Failed")
       .setDescription(`Score: **${result.score}/10**\nPlatform: **${session.platform}**\nDepartment: **${session.department.toUpperCase()}**`)
-      .setColor(passed ? 030303 : 030303);
+      .setColor(passed ? 0x111111 : 0x111111);
 
     await interaction.update({ embeds: [reviewEmbed], components: [] });
 
@@ -121,7 +121,7 @@ async function handleAnswer(interaction) {
             { name: `${platformLabel} Server`, value: invites[platformLabel] || "Invite failed." },
             { name: "Economy Server", value: invites.Economy || "Invite failed." }
           )
-          .setColor(030303);
+          .setColor(0x111111);
 
         await interaction.user.send({ embeds: [inviteEmbed] });
         sessions.delete(userId);
@@ -135,7 +135,7 @@ async function handleAnswer(interaction) {
             new EmbedBuilder()
               .setTitle("⚠️ Verification Timeout")
               .setDescription("Your session expired. Please restart the application process.")
-              .setColor(030303)
+              .setColor(0x111111)
           ]
         });
         sessions.delete(userId);
