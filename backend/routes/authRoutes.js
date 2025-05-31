@@ -93,6 +93,26 @@ router.get("/callback", async (req, res) => {
           }
         ]
       }).catch(console.error);
+      try {
+        const flaggedUser = await client.users.fetch(user.id);
+        await flaggedUser.send({
+          embeds: [
+            {
+              title: "⚠️ Authorization Blocked",
+              description:
+                "We noticed you're part of another roleplay server that isn't approved by Prime Roleplay. Please open a ticket here: <#1368536515575156796> and provide a screenshot of your server list so we can assist you.",
+              color: 0xffa500,
+              timestamp: new Date().toISOString(),
+              footer: {
+                text: "Prime Roleplay Verification System"
+              }
+            }
+          ]
+        });
+      } catch (err) {
+        console.warn("⚠️ Could not DM flagged user:", err.message);
+      }
+      
     }
 
     return res.send("It has been detected that you are apart of another roleplay server. Before you proceed please create a support ticket in Prime Network HQ server and provide a picture of your server list. Our team will assist you as soon as possible!");
