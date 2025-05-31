@@ -128,7 +128,7 @@ async function handleAnswer(interaction) {
         const logChannel = await interaction.client.channels.fetch(logChannelId).catch(() => null);
         if (logChannel?.isTextBased()) {
           const logEmbed = new EmbedBuilder()
-            .setTitle("Application Log")
+            .setTitle("📅 New Auto-Approved Application")
             .setDescription(`<@${userId}> has been auto-approved and verified.`)
             .addFields(
               { name: "Platform", value: platformLabel, inline: true },
@@ -140,6 +140,43 @@ async function handleAnswer(interaction) {
             .setTimestamp();
 
           await logChannel.send({ embeds: [logEmbed] });
+        }
+
+        const departmentMap = {
+          civilian: "Civilian",
+          pso: "PSO",
+          safr: "SAFR"
+        };
+        const department = departmentMap[session.department?.toLowerCase()] || "Civilian";
+
+        try {
+          await AcceptedUser.findOneAndUpdate(
+            { discordId: userId },
+            { discordId: userId, department },
+            { upsert: true, new: true }
+          );
+          console.log(`✅ Saved accepted user ${userId} to database with department ${department}`);
+        } catch (err) {
+          console.error("❌ Failed to save accepted user:", err);
+        }
+
+        const guildId = interaction.guildId;
+        const guild = await interaction.client.guilds.fetch(guildId).catch(() => null);
+        const member = await guild?.members.fetch(userId).catch(() => null);
+
+        if (member) {
+          const APPLIED_ROLE = "1368345426482167818";
+          const ACCEPTED_ROLE = "1368345401815465985";
+
+          try {
+            await member.roles.remove(APPLIED_ROLE);
+            await member.roles.add(ACCEPTED_ROLE);
+            console.log(`✅ Updated roles for ${userId}`);
+          } catch (err) {
+            console.error(`❌ Failed to update roles for ${userId}:`, err);
+          }
+        } else {
+          console.warn(`⚠️ Could not find guild member ${userId}`);
         }
 
         sessions.delete(userId);
