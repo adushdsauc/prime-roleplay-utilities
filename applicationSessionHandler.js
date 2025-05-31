@@ -47,7 +47,7 @@ function buildQuestionMenu(userId) {
   const embed = new EmbedBuilder()
     .setTitle(`📋 Question ${session.currentIndex + 1}`)
     .setDescription(currentQ.question)
-    .setColor(030202);
+    .setColor(030104);
 
   return { embed, row };
 }
@@ -67,7 +67,7 @@ async function handleAnswer(interaction) {
     const reviewEmbed = new EmbedBuilder()
       .setTitle(passed ? "✅ Application Passed" : "❌ Application Failed")
       .setDescription(`Score: **${result.score}/10**\nPlatform: **${session.platform}**\nDepartment: **${session.department.toUpperCase()}**`)
-      .setColor(passed ? 030202 : 030202);
+      .setColor(passed ? 030104 : 030104);
 
     await interaction.update({ embeds: [reviewEmbed], components: [] });
 
@@ -85,7 +85,7 @@ async function handleAnswer(interaction) {
       .setTitle("🎉 You Passed!")
       .setDescription("Please log in with Discord to verify and receive your invites.")
       .addFields({ name: "Login", value: `[Click here to verify](${process.env.OAUTH_LOGIN_URL})` })
-      .setColor(030202);
+      .setColor(030104);
 
     await interaction.user.send({ embeds: [loginEmbed] });
 
@@ -121,7 +121,7 @@ async function handleAnswer(interaction) {
             { name: `${platformLabel} Server`, value: invites[platformLabel] || "Invite failed." },
             { name: "Economy Server", value: invites.Economy || "Invite failed." }
           )
-          .setColor(030202);
+          .setColor(030104);
 
         await interaction.user.send({ embeds: [inviteEmbed] });
         sessions.delete(userId);
