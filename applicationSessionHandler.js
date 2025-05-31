@@ -65,7 +65,7 @@ async function handleAnswer(interaction) {
     const passed = result.passed;
 
     const reviewEmbed = new EmbedBuilder()
-      .setTitle(passed ? "<:checkmark:987654321098765432>" : "❌ Application Failed")
+      .setTitle(passed ? "<:checkmark:1378190549428994058> You have passed!" : "❌ Application Failed")
       .setDescription(`Score: **${result.score}/10**\nPlatform: **${session.platform}**\nDepartment: **${session.department.toUpperCase()}**`)
       .setColor(passed ? 0x111111 : 0x111111);
 
@@ -82,7 +82,7 @@ async function handleAnswer(interaction) {
 
     // ✅ Prompt authentication link
     const loginEmbed = new EmbedBuilder()
-      .setTitle("<:checkmark:987654321098765432> You Passed!")
+      .setTitle("<:checkmark:1378190549428994058> You Passed!")
       .setDescription("Please log in with Discord to verify and receive your invites.")
       .addFields({ name: "Login", value: `[Click here to verify](${process.env.OAUTH_LOGIN_URL})` })
       .setColor(030303);
@@ -115,7 +115,7 @@ async function handleAnswer(interaction) {
         });
 
         const inviteEmbed = new EmbedBuilder()
-          .setTitle("<:checkmark:987654321098765432> Verified & Ready!")
+          .setTitle("<:checkmark:1378190549428994058> Verified & Ready!")
           .setDescription("Here are your one-time use invite links (valid for 24 hours):")
           .addFields(
             { name: `${platformLabel} Server`, value: invites[platformLabel] || "Invite failed." },
@@ -133,7 +133,7 @@ async function handleAnswer(interaction) {
         await interaction.user.send({
           embeds: [
             new EmbedBuilder()
-              .setTitle("<:Timer:123456789012345678> Verification Timeout")
+              .setTitle("<:Timer:1378190968536432691> Verification Timeout")
               .setDescription("Your session expired. Please restart the application process.")
               .setColor(0x111111)
           ]
