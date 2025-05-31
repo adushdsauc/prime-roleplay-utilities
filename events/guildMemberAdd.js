@@ -1,15 +1,10 @@
 const { Events, EmbedBuilder } = require("discord.js");
-const { GoogleSpreadsheet } = require("google-spreadsheet");
-const creds = JSON.parse(process.env.GOOGLE_SHEETS_CREDENTIALS);
 const AcceptedUser = require("../models/AcceptedUser");
 const Invite = require("../models/Invite");
 const Callsign = require("../models/Callsign");
 
 const XBOX_GUILD_ID = "1372312806107512894";
 const PLAYSTATION_GUILD_ID = "1369495333574545559";
-const XBOX_SHEET_ID = "18Kl4TYeJ-ZyDXymZexbLT2uWKC523KC9lxebrWttmQ0";
-const PLAYSTATION_SHEET_ID = "10iA9BobQuFrKrhvaTkrlJPR1tJaFI4qNh4qzJPbvA8Y";
-const SHEET_TAB_NAME = "Members";
 
 const LOG_CHANNELS = {
   [XBOX_GUILD_ID]: "1372312809500835996",
@@ -50,19 +45,6 @@ async function generateCallsign(discordId, department, platform) {
 
   await Callsign.create({ discordId, department, number, platform });
   return `${range.prefix}-${number}`;
-}
-
-async function updateSheet(docId, member, department, callsign) {
-  const doc = new GoogleSpreadsheet(docId);
-  await doc.useServiceAccountAuth(creds);
-  await doc.loadInfo();
-  const sheet = doc.sheetsByTitle[SHEET_TAB_NAME];
-  await sheet.addRow({
-    "Discord Tag": member.user.tag,
-    "Discord ID": member.id,
-    "Department": department,
-    "Callsign": callsign
-  });
 }
 
 module.exports = {
@@ -137,14 +119,6 @@ module.exports = {
     } catch (err) {
       console.error("❌ Failed to generate callsign:", err);
       callsign = "Pending";
-    }
-
-    const sheetId = guildId === XBOX_GUILD_ID ? XBOX_SHEET_ID : PLAYSTATION_SHEET_ID;
-    try {
-      console.log("📄 Updating sheet for:", member.user.tag);
-      await updateSheet(sheetId, member, department, callsign);
-    } catch (err) {
-      console.error("❌ Failed to update Google Sheet:", err.message);
     }
 
     const baseName = member.user.username;
