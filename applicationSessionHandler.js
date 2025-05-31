@@ -1,19 +1,19 @@
-// applicationSessionHandler.js
-const gradeApplication = require("./utils/gradeApplication");
+// ✅ Modified handleAnswer() to match the exact flow of your manual approval system
+// File: applicationSessionHandler.js
+
 const path = require("path");
-const {
-  ActionRowBuilder,
-  StringSelectMenuBuilder,
-  EmbedBuilder,
-} = require("discord.js");
+const gradeApplication = require("./utils/gradeApplication");
+const AuthUser = require("./backend/models/authUser");
+const createSecureInvite = require("./utils/createSecureInvite");
+const AcceptedUser = require("./models/AcceptedUser");
+const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require("discord.js");
 
 const sessions = new Map();
 
 function loadQuestions(department) {
-    const filePath = path.join(__dirname, "data", "questions", `${department}.js`);
-    console.log("📦 Loading questions from:", filePath); // debug
-    return require(filePath);
-  }  
+  const filePath = path.join(__dirname, `./data/questions/${department}.js`);
+  return require(filePath);
+}
 
 function startApplication(userId, department, platform) {
   const questions = loadQuestions(department);
@@ -22,8 +22,9 @@ function startApplication(userId, department, platform) {
     platform,
     currentIndex: 0,
     answers: [],
-    questions,
+    questions
   });
+
   return buildQuestionMenu(userId);
 }
 
@@ -38,7 +39,7 @@ function buildQuestionMenu(userId) {
       .addOptions(
         currentQ.options.map((opt) => ({
           label: opt,
-          value: opt,
+          value: opt
         }))
       )
   );
@@ -61,13 +62,85 @@ async function handleAnswer(interaction) {
 
   if (session.currentIndex >= session.questions.length) {
     const result = gradeApplication(session.answers, session.questions);
-    const embed = new EmbedBuilder()
-      .setTitle(result.passed ? "✅ Application Passed" : "❌ Application Failed")
-      .setDescription(`Score: **${result.score}/10**\nPlatform: **${session.platform}**\nDepartment: **${session.department.toUpperCase()}**`)
-      .setColor(result.passed ? 0x2ecc71 : 0xe74c3c);
+    const passed = result.passed;
 
-    await interaction.update({ embeds: [embed], components: [] });
-    sessions.delete(userId);
+    const reviewEmbed = new EmbedBuilder()
+      .setTitle(passed ? "✅ Application Passed" : "❌ Application Failed")
+      .setDescription(`Score: **${result.score}/10**\nPlatform: **${session.platform}**\nDepartment: **${session.department.toUpperCase()}**`)
+      .setColor(passed ? 0x2ecc71 : 0xe74c3c);
+
+    await interaction.update({ embeds: [reviewEmbed], components: [] });
+
+    if (!passed) return sessions.delete(userId);
+
+    // ✅ Save to AcceptedUser
+    await AcceptedUser.findOneAndUpdate(
+      { discordId: userId },
+      { discordId: userId, department: session.department },
+      { upsert: true, new: true }
+    );
+
+    // ✅ Prompt authentication link
+    const loginEmbed = new EmbedBuilder()
+      .setTitle("🎉 You Passed!")
+      .setDescription("Please log in with Discord to verify and receive your invites.")
+      .addFields({ name: "Login", value: `[Click here to verify](${process.env.OAUTH_LOGIN_URL})` })
+      .setColor(0x2ecc71);
+
+    await interaction.user.send({ embeds: [loginEmbed] });
+
+    // 🔄 Poll for verification
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      const verified = await AuthUser.findOne({ discordId: userId });
+      if (verified) {
+        clearInterval(interval);
+
+        const platformLabel = session.platform.charAt(0).toUpperCase() + session.platform.slice(1);
+        const invites = {};
+
+        invites.Economy = await createSecureInvite({
+          client: interaction.client,
+          guildId: process.env.ECONOMY_SERVER_ID,
+          userId,
+          platform: session.platform
+        });
+
+        const platformGuildId = process.env[`${session.platform.toUpperCase()}_SERVER_ID`];
+        invites[platformLabel] = await createSecureInvite({
+          client: interaction.client,
+          guildId: platformGuildId,
+          userId,
+          platform: session.platform
+        });
+
+        const inviteEmbed = new EmbedBuilder()
+          .setTitle("✅ Verified & Ready!")
+          .setDescription("Here are your one-time use invite links (valid for 24 hours):")
+          .addFields(
+            { name: `${platformLabel} Server`, value: invites[platformLabel] || "Invite failed." },
+            { name: "Economy Server", value: invites.Economy || "Invite failed." }
+          )
+          .setColor(0x2ecc71);
+
+        await interaction.user.send({ embeds: [inviteEmbed] });
+        sessions.delete(userId);
+        return;
+      }
+
+      if (++attempts > 18) {
+        clearInterval(interval);
+        await interaction.user.send({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle("⚠️ Verification Timeout")
+              .setDescription("Your session expired. Please restart the application process.")
+              .setColor(0xe74c3c)
+          ]
+        });
+        sessions.delete(userId);
+      }
+    }, 10000);
   } else {
     const next = buildQuestionMenu(userId);
     await interaction.update({ embeds: [next.embed], components: [next.row] });
