@@ -10,6 +10,17 @@ const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require("dis
 
 const sessions = new Map();
 
+const ALLOWED_GUILDS = [
+  "1372312806107512894",
+  "1369495333574545559",
+  "1369029438351867964",
+  "945681941213089814",
+  "795657260726091838",
+  "229240178441584645",
+  "1369545344529993768",
+  "1368615880359153735"
+];
+
 function loadQuestions(department) {
   const filePath = path.join(__dirname, `./data/questions/${department}.js`);
   return require(filePath);
@@ -123,7 +134,6 @@ async function handleAnswer(interaction) {
 
         await interaction.user.send({ embeds: [inviteEmbed] });
 
-        // ✅ Log channel embed
         const logChannelId = process.env.APPLICATION_LOG_CHANNEL_ID;
         const logChannel = await interaction.client.channels.fetch(logChannelId).catch(() => null);
         if (logChannel?.isTextBased()) {
