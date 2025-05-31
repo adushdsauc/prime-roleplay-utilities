@@ -281,11 +281,20 @@ await interaction.channel.send({ embeds: [confirmEmbed] });
           ])
       );
 
-      await dm.send({
+try {
+  await dm.send("Here is your application!");
+} catch (err) {
+  if (err.code === 50007) {
+    await interaction.reply({
         content: `You selected the **${selected.toUpperCase()}** application.\nPlease choose your platform to continue:`,
-        components: [platformRow],
-      });
-    }
+        components: [platformRow],      
+      ephemeral: true
+    });
+  } else {
+    console.error("Unexpected DM error:", err);
+  }
+}
+
 
     if (interaction.isStringSelectMenu() && interaction.customId.startsWith("platform_select_")) {
       await interaction.deferUpdate();
