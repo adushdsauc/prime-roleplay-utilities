@@ -308,7 +308,7 @@ await interaction.channel.send({ embeds: [confirmEmbed] });
       const platformEmbed = new EmbedBuilder()
         .setTitle("✅ Platform Selected")
         .setDescription(`You selected **${platform.toUpperCase()}**.\n\nAre you ready to begin your **${department.toUpperCase()}** application?`)
-        .setColor(030104);
+        .setColor(030303);
       
       const confirmRowPlatform = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
