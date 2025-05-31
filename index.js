@@ -266,35 +266,35 @@ await interaction.channel.send({ embeds: [confirmEmbed] });
       await command.execute(interaction, client);
     }
 
-    if (interaction.isStringSelectMenu() && interaction.customId === "application_type") {
-      const selected = interaction.values[0];
-      await interaction.deferUpdate();
+if (interaction.isStringSelectMenu() && interaction.customId === "application_type") {
+  const selected = interaction.values[0];
+  await interaction.deferUpdate();
 
-      const dm = await interaction.user.createDM();
-      const platformRow = new ActionRowBuilder().addComponents(
-        new StringSelectMenuBuilder()
-          .setCustomId(`platform_select_${selected}`)
-          .setPlaceholder("Select your console platform")
-          .addOptions([
-            { label: "Xbox", value: "xbox" },
-            { label: "PlayStation", value: "playstation" }
-          ])
-      );
+  const dm = await interaction.user.createDM();
+  const platformRow = new ActionRowBuilder().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId(`platform_select_${selected}`)
+      .setPlaceholder("Select your console platform")
+      .addOptions([
+        { label: "Xbox", value: "xbox" },
+        { label: "PlayStation", value: "playstation" }
+      ])
+  );
+
+  try {
+    await dm.send("Here is your application form! Good luck!");
+  } catch (err) {
+    if (err.code === 50007) {
+      await interaction.reply({
+        content: `You selected the **${selected.toUpperCase()}** application.\nPlease choose your platform to continue:`,
+        components: [platformRow],
+        ephemeral: true
+      });
+    } else {
+      console.error("Unexpected DM error:", err);
     }
-try {
-  await dm.send("Here is your application form! Good luck!");
-} catch (err) {
-  if (err.code === 50007) {
-    await interaction.reply({
-      content: `You selected the **${selected.toUpperCase()}** application.\nPlease choose your platform to continue:`,
-      components: [platformRow],
-      ephemeral: true // ✅ This line was misaligned before
-    });
-  } else {
-    console.error("Unexpected DM error:", err);
   }
 }
-
 
     if (interaction.isStringSelectMenu() && interaction.customId.startsWith("platform_select_")) {
       await interaction.deferUpdate();
