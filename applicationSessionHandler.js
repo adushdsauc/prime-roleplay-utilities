@@ -45,7 +45,7 @@ function buildQuestionMenu(userId) {
   );
 
   const embed = new EmbedBuilder()
-    .setTitle(`📋 Question ${session.currentIndex + 1}`)
+    .setTitle(`Question ${session.currentIndex + 1}`)
     .setDescription(currentQ.question)
     .setColor(0x111111);
 
