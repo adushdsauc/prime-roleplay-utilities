@@ -280,7 +280,7 @@ await interaction.channel.send({ embeds: [confirmEmbed] });
             { label: "PlayStation", value: "playstation" }
           ])
       );
-
+    }
 try {
   await dm.send("Here is your application form! Good luck!");
 } catch (err) {
