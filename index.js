@@ -282,13 +282,13 @@ await interaction.channel.send({ embeds: [confirmEmbed] });
       );
 
 try {
-  await dm.send("Here is your application!");
+  await dm.send("Here is your application form! Good luck!");
 } catch (err) {
   if (err.code === 50007) {
     await interaction.reply({
-        content: `You selected the **${selected.toUpperCase()}** application.\nPlease choose your platform to continue:`,
-        components: [platformRow],      
-      ephemeral: true
+      content: `You selected the **${selected.toUpperCase()}** application.\nPlease choose your platform to continue:`,
+      components: [platformRow],
+      ephemeral: true // ✅ This line was misaligned before
     });
   } else {
     console.error("Unexpected DM error:", err);
