@@ -267,10 +267,9 @@ await interaction.channel.send({ embeds: [confirmEmbed] });
     }
 
 if (interaction.isStringSelectMenu() && interaction.customId === "application_type") {
-  const selected = interaction.values[0];
+  const selected = interaction.values[0]; // pso, civilian, safr
   await interaction.deferUpdate();
 
-  const dm = await interaction.user.createDM();
   const platformRow = new ActionRowBuilder().addComponents(
     new StringSelectMenuBuilder()
       .setCustomId(`platform_select_${selected}`)
@@ -282,20 +281,21 @@ if (interaction.isStringSelectMenu() && interaction.customId === "application_ty
   );
 
   try {
-    await dm.send("Here is your application form! Good luck!");
+    await interaction.user.send({
+      content: `You selected the **${selected.toUpperCase()}** application.\nPlease choose your platform to continue:`,
+      components: [platformRow]
+    });
   } catch (err) {
     if (err.code === 50007) {
       await interaction.reply({
-        content: `You selected the **${selected.toUpperCase()}** application.\nPlease choose your platform to continue:`,
-        components: [platformRow],
+        content: `❌ I couldn't DM you. Please enable DMs and try again.`,
         ephemeral: true
       });
     } else {
-      console.error("Unexpected DM error:", err);
+      console.error("❌ Unexpected DM error:", err);
     }
   }
 }
-
     if (interaction.isStringSelectMenu() && interaction.customId.startsWith("platform_select_")) {
       await interaction.deferUpdate();
       const department = interaction.customId.replace("platform_select_", "");
