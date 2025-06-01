@@ -52,51 +52,66 @@ module.exports = {
     }
 
     const unix = Math.floor(dt.toSeconds());
-    const host = interaction.user;
 
     const embed = new EmbedBuilder()
-      .setColor(type === "Primary" ? 0x00b0f4 : 0xffa500)
-      .setTitle(`📣 PRP ${type} Session Announcement`)
-      .setDescription(`**${type} Session – Official Notice**\n• Host: ${host}\n• Gamertag: ${gamertag}\n• Scheduled Date & Time: <t:${unix}:F> | <t:${unix}:R>`)
+      .setColor(type === "Primary" ? 0x0099ff : 0xffa500)
+      .setTitle("Global Roleplay™ PlayStation | Roleplay Session")
+      .setDescription(`**Roleplay Session**\n> This message upholds all information regarding the upcoming roleplay session hosted by **Global Roleplay**.\n> Please take your time to review the details below and if any questions arise, please ask the host.\n\n**PSN:** ${gamertag}`)
       .addFields(
-        { name: "✅ Attending", value: "–", inline: true },
-        { name: "🕰️ Joining Late", value: "–", inline: true },
-        { name: "❌ Can’t Attend", value: "–", inline: true }
+        {
+          name: "———————————————\nCommencement Process",
+          value:
+            "> At the below time invites will begin being disputed. You will then be directed to your proper briefing channels.\n> We ask that you’re to ensure you are connected to the **Session Queue** voice channel.",
+        },
+        {
+          name: "———————————————\nSession Orientation 🗣️",
+          value:
+            "> Before the session must begin, all individuals must be orientated accordingly.\n> The orientation will happen after the invites are dispersed and you will be briefed by the **highest-ranking official** in terms of your **department**.",
+        },
+        {
+          name: "———————————————\nSession Details",
+          value:
+            `> **Start Time:** <t:${unix}:F> (<t:${unix}:R>)\n> • **Session Type:** ${type} | Scenario Based\n> • **Area of Play:** *To Be Announced*\n> • [Global Roleplay Booklet](https://example.com) • [Map](https://example.com) • [Timezones](https://example.com)`,
+        },
+        {
+          name: "✅ Attending", value: "–", inline: true
+        },
+        {
+          name: "❌ Not Attending", value: "–", inline: true
+        },
+        {
+          name: "🕰️ Late", value: "–", inline: true
+        }
       )
-      .setFooter({ text: "Please respond using the buttons below." });
+      .setFooter({ text: "Host: " + interaction.user.tag + " | Respond with the buttons below." });
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId("attending").setLabel("✅ Attending").setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId("late").setLabel("🕰️ Late").setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId("cant").setLabel("❌ Can’t Attend").setStyle(ButtonStyle.Danger)
+      new ButtonBuilder().setCustomId("cant").setLabel("❌ Not Attending").setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId("late").setLabel("🕰️ Late").setStyle(ButtonStyle.Secondary)
     );
 
     const message = await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
 
-    const attendance = { attending: [], late: [], cant: [] };
+    const attendance = { attending: [], cant: [], late: [] };
 
     const collector = message.createMessageComponentCollector({ time: 86400000 }); // 24h
 
     collector.on("collect", async i => {
       if (!i.isButton()) return;
 
-      const userMention = `<@${i.user.id}>`;
-      const { customId } = i;
-
-      // Remove user from all lists first
-      for (const key of Object.keys(attendance)) {
-        attendance[key] = attendance[key].filter(id => id !== userMention);
+      const mention = `<@${i.user.id}>`;
+      for (const key in attendance) {
+        attendance[key] = attendance[key].filter(id => id !== mention);
       }
 
-      // Add to selected list
-      attendance[customId].push(userMention);
+      attendance[i.customId].push(mention);
 
-      // Update embed fields
-      embed.data.fields = [
+      embed.spliceFields(3, 3, 
         { name: "✅ Attending", value: attendance.attending.join("\n") || "–", inline: true },
-        { name: "🕰️ Joining Late", value: attendance.late.join("\n") || "–", inline: true },
-        { name: "❌ Can’t Attend", value: attendance.cant.join("\n") || "–", inline: true },
-      ];
+        { name: "❌ Not Attending", value: attendance.cant.join("\n") || "–", inline: true },
+        { name: "🕰️ Late", value: attendance.late.join("\n") || "–", inline: true }
+      );
 
       await i.update({ embeds: [embed], components: [row] });
     });
