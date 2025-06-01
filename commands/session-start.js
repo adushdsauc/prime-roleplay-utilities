@@ -5,8 +5,11 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  PermissionsBitField,
 } = require("discord.js");
 const { DateTime } = require("luxon");
+
+const ALLOWED_ROLE_IDS = ["1370176650234302484", "1372312806233215070"];
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -28,11 +31,17 @@ module.exports = {
     )
     .addStringOption(option =>
       option.setName("datetime")
-        .setDescription("Date and time in format YYYY-MM-DD HH:mm (your timezone)")
+        .setDescription("Date and time in format YYYY-MM-DD HH:mm (UTC)")
         .setRequired(true)
     ),
 
   async execute(interaction) {
+    const memberRoles = interaction.member.roles.cache;
+    const isAuthorized = ALLOWED_ROLE_IDS.some(roleId => memberRoles.has(roleId));
+    if (!isAuthorized) {
+      return interaction.reply({ content: "❌ You do not have permission to run this command.", ephemeral: true });
+    }
+
     const type = interaction.options.getString("type");
     const gamertag = interaction.options.getString("gamertag");
     const datetimeInput = interaction.options.getString("datetime");
