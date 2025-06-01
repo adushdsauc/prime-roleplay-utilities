@@ -41,67 +41,68 @@ const roleMappings = {
     playstation: { range: "D-101", roleId: "1369497153918996630" }
   }
 },
-        "SAFR": {
-          "Director Of SAFR": {
-            xbox: { range: "Command 1", roleId: "1372312806191399027" },
-            playstation: { range: "Command 1", roleId: "1369497154976088094" }
-          },
-          "Assistant Director Of SAFR": {
-            xbox: { range: "Command 2", roleId: "1372312806191399026" },
-            playstation: { range: "Command 2", roleId: "1370380133801922580" }
-          },
-          "SAFR | Battalion Chief": {
-            xbox: { range: "BAT-01", roleId: "1372312806166102084" },
-            playstation: { range: "BAT-01", roleId: "1369520230023430184" }
-          },
-          "SAFR | Captain": {
-            xbox: { range: "FF-05 - FF-10", roleId: "1372312806166102082" },
-            playstation: { range: "FF-05 - FF-10", roleId: "1369520231285915749" }
-          },
-          "SAFR | Lieutenant": {
-            xbox: { range: "FF-11 - FF-20", roleId: "1372312806166102083" },
-            playstation: { range: "FF-11 - FF-20", roleId: "1369520230417567744" }
-          },
-          "SAFR | Senior Firefighter": {
-            xbox: { range: "FF-21 - FF-35", roleId: "1372312806166102080" },
-            playstation: { range: "FF-21 - FF-35", roleId: "1369520231915061268" }
-          },
-          "SAFR | Firefighter": {
-            xbox: { range: "FF-36 - FF-50", roleId: "1372312806166102078" },
-            playstation: { range: "FF-36 - FF-50", roleId: "1370884308012761188" }
-          },
-          "SAFR | Recruit": {
-            xbox: { range: "FF-R1 - FF-R100", roleId: "1372312806166102076" },
-            playstation: { range: "FF-R1 - FF-R100", roleId: "1369520232426770453" }
-          }
-        },
+SAFR: {
+  "Recruit": {
+    xbox: { roleId: "1372312806166102076", range: "FF-R1 - FF-R100" },
+    playstation: { roleId: "1369520232426770453", range: "FF-R1 - FF-R100" }
+  },
+  "Firefighter": {
+    xbox: { roleId: "1372312806166102078", range: "FF-36 - FF-50" },
+    playstation: { roleId: "1370884308012761188", range: "FF-36 - FF-50" }
+  },
+  "Senior Firefighter": {
+    xbox: { roleId: "1372312806166102080", range: "FF-21 - FF-35" },
+    playstation: { roleId: "1369520231915061268", range: "FF-21 - FF-35" }
+  },
+  "Lieutenant": {
+    xbox: { roleId: "1372312806166102083", range: "FF-11 - FF-20" },
+    playstation: { roleId: "1369520230417567744", range: "FF-11 - FF-20" }
+  },
+  "Captain": {
+    xbox: { roleId: "1372312806166102082", range: "FF-05 - FF-10" },
+    playstation: { roleId: "1369520231285915749", range: "FF-05 - FF-10" }
+  },
+  "Battalion Chief": {
+    xbox: { roleId: "1372312806166102084", range: "BAT-01 - BAT-01" },
+    playstation: { roleId: "1369520230023430184", range: "BAT-01 - BAT-01" }
+  },
+  "Assistant Director": {
+    xbox: { roleId: "1372312806191399026", range: "Command 2 - Command 2" },
+    playstation: { roleId: "1370380133801922580", range: "Command 2 - Command 2" }
+  },
+  "Director": {
+    xbox: { roleId: "1372312806191399027", range: "Command 1 - Command 1" },
+    playstation: { roleId: "1369497154976088094", range: "Command 1 - Command 1" }
+  }
+},
       
-        "Civilian": {
-          "Civ 5": {
-            xbox: { range: "30-150", roleId: "1372312806145392773" },
-            playstation: { range: "30-150", roleId: "1369497170985881630" }
-          },
-          "Civ 4": {
-            xbox: { range: "150-400", roleId: "1372312806145392772" },
-            playstation: { range: "150-400", roleId: "1369497196759744712" }
-          },
-          "Civ 3": {
-            xbox: { range: "400-600", roleId: "1372312806145392771" },
-            playstation: { range: "400-600", roleId: "1369497192829812776" }
-          },
-          "Civ 2": {
-            xbox: { range: "600-900", roleId: "1372312806145392770" },
-            playstation: { range: "600-900", roleId: "1369497194314596494" }
-          },
-          "Civ 1": {
-            xbox: { range: "900-1250", roleId: "1372312806145392769" },
-            playstation: { range: "900-1250", roleId: "1369497195929145404" }
-          },
-          "Prob": {
-            xbox: { range: "1250-1750", roleId: "1372312806145392768" },
-            playstation: { range: "1250-1750", roleId: "1369497197489684650" }
-          }
-        }
+Civilian: {
+  order: ["Prob", "Civ 1", "Civ 2", "Civ 3", "Civ 4", "Civ 5"],
+  "Prob": {
+    xbox: { roleId: "1372312806145392768", range: "Civ-1250 - Civ-1750" },
+    playstation: { roleId: "1369497197489684650", range: "Civ-1250 - Civ-1750" }
+  },
+  "Civ 1": {
+    xbox: { roleId: "1372312806145392769", range: "Civ-900 - Civ-1250" },
+    playstation: { roleId: "1369497195929145404", range: "Civ-900 - Civ-1250" }
+  },
+  "Civ 2": {
+    xbox: { roleId: "1372312806145392770", range: "Civ-600 - Civ-900" },
+    playstation: { roleId: "1369497194314596494", range: "Civ-600 - Civ-900" }
+  },
+  "Civ 3": {
+    xbox: { roleId: "1372312806145392771", range: "Civ-400 - Civ-600" },
+    playstation: { roleId: "1369497192829812776", range: "Civ-400 - Civ-600" }
+  },
+  "Civ 4": {
+    xbox: { roleId: "1372312806145392772", range: "Civ-150 - Civ-400" },
+    playstation: { roleId: "1369497196759744712", range: "Civ-150 - Civ-400" }
+  },
+  "Civ 5": {
+    xbox: { roleId: "1372312806145392773", range: "Civ-30 - Civ-150" },
+    playstation: { roleId: "1369497170985881630", range: "Civ-30 - Civ-150" }
+  }
+}
       };
   module.exports = roleMappings;
   
