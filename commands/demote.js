@@ -14,7 +14,7 @@ const STAFF_ROLE_IDS = [
   "1372312806212239406",
   "1370884299712233592",
   "1370884306964185138",
-  "1370968063431671969",
+  "1370968063431671969"
 ];
 
 module.exports = {
@@ -56,7 +56,7 @@ module.exports = {
     if (!hasStaffRole) {
       return interaction.editReply({
         content: "❌ You do not have permission to use this command.",
-        ephemeral: true,
+        ephemeral: true
       });
     }
 
@@ -69,47 +69,72 @@ module.exports = {
       return interaction.editReply({ content: "❌ Could not determine platform or member not found." });
     }
 
-    const departmentRoles = Object.entries(roleMappings[department]);
-    let currentIndex = -1;
-    for (let i = departmentRoles.length - 1; i >= 0; i--) {
-      const [, roleObj] = departmentRoles[i];
-      if (member.roles.cache.has(roleObj[platform].roleId)) {
-        currentIndex = i;
+    const ranks = roleMappings[department]?.order;
+    if (!ranks) {
+      return interaction.editReply({ content: "❌ Invalid department configuration." });
+    }
+
+    // Find current rank
+    let currentRank = null;
+    for (const rank of ranks) {
+      const roleId = roleMappings[department][rank]?.[platform]?.roleId;
+      if (member.roles.cache.has(roleId)) {
+        currentRank = rank;
         break;
       }
     }
 
-    if (currentIndex === -1 || currentIndex === 0) {
+    if (!currentRank) {
       return interaction.editReply({
-        content: "❌ Cannot demote — not in a valid rank or already at lowest rank."
+        content: "❌ Cannot demote — user is not in a valid rank."
       });
     }
 
-    const [currentRank, currentRole] = departmentRoles[currentIndex];
-    const [prevRank, prevRole] = departmentRoles[currentIndex - 1];
-
-    for (const [, roleObj] of departmentRoles) {
-      await member.roles.remove(roleObj[platform].roleId).catch(() => {});
-    }
-    await member.roles.add(prevRole[platform].roleId).catch(() => {});
-
-    const range = prevRole[platform].range;
-    const prefix = range.match(/[A-Za-z\-]+/g)?.[0]?.trim() || "";
-    const matches = range.match(/\d+/g);
-    let start = null;
-    let end = null;
-    if (matches && matches.length >= 1) {
-      start = parseInt(matches[0], 10);
-      end = parseInt(matches[1] || matches[0], 10);
-    } else {
+    const currentIndex = ranks.indexOf(currentRank);
+    if (currentIndex <= 0) {
       return interaction.editReply({
-        content: "❌ Invalid callsign range format in roleMappings."
+        content: "❌ Cannot demote — already at lowest rank."
+      });
+    }
+
+    const prevRank = ranks[currentIndex - 1];
+    const prevRoleId = roleMappings[department][prevRank]?.[platform]?.roleId;
+
+    if (!prevRoleId) {
+      return interaction.editReply({
+        content: "❌ Previous role ID not found in mappings."
+      });
+    }
+
+    // Remove all known roles in that department first
+    for (const rank of ranks) {
+      const roleId = roleMappings[department][rank]?.[platform]?.roleId;
+      if (roleId) await member.roles.remove(roleId).catch(() => {});
+    }
+
+    await member.roles.add(prevRoleId).catch(() => {});
+
+    // Assign updated callsign
+    const range = roleMappings[department][prevRank]?.[platform]?.range;
+    if (!range) {
+      return interaction.editReply({ content: "❌ No callsign range found for this role." });
+    }
+
+    const prefix = range.match(/[A-Za-z\-]+/)?.[0] || "";
+    const matches = range.match(/\d+/g);
+    const start = parseInt(matches?.[0], 10);
+    const end = parseInt(matches?.[1] ?? matches?.[0], 10);
+
+    if (isNaN(start) || isNaN(end)) {
+      return interaction.editReply({
+        content: "❌ Invalid callsign range format."
       });
     }
 
     const usedNumbers = new Set(
       (await Callsign.find({ department, platform })).map(c => c.number)
     );
+
     let assignedNumber = null;
     for (let i = start; i <= end; i++) {
       if (!usedNumbers.has(i)) {
@@ -119,7 +144,9 @@ module.exports = {
     }
 
     if (!assignedNumber) {
-      return interaction.editReply({ content: `❌ No available callsigns left for ${department} on ${platform}.` });
+      return interaction.editReply({
+        content: `❌ No available callsigns left for ${department} on ${platform}.`
+      });
     }
 
     const callsign = `${prefix}${assignedNumber}`;
@@ -130,13 +157,14 @@ module.exports = {
       { upsert: true, new: true }
     );
 
+    // Set nickname
     const newNickname = `${callsign} | ${user.username}`.slice(0, 32);
-    if (member.nickname !== newNickname) {
-      try {
+    try {
+      if (member.nickname !== newNickname) {
         await member.setNickname(newNickname);
-      } catch (err) {
-        console.warn("⚠️ Failed to update nickname:", err.message);
       }
+    } catch (err) {
+      console.warn("⚠️ Failed to update nickname:", err.message);
     }
 
     const embed = new EmbedBuilder()
