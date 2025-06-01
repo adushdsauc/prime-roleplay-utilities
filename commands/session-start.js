@@ -60,7 +60,7 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setColor(type === "Primary" ? 0x0099ff : 0xffa500)
       .setTitle("Global Roleplay™ " + (guildId === PLAYSTATION_GUILD_ID ? "PlayStation" : "Xbox") + " | Roleplay Session")
-      .setDescription(`**Roleplay Session**\n> This message upholds all information regarding the upcoming roleplay session hosted by **Global Roleplay**.\n> Please take your time to review the details below and if any questions arise, please ask the host.\n\n${label} ${gamertag}`)
+      .setDescription(`**Roleplay Session**\n> This message upholds all information regarding the upcoming roleplay session hosted by **Prime Roleplay**.\n> Please take your time to review the details below and if any questions arise, please ask the host.\n\n${label} ${gamertag}`)
       .addFields(
         {
           name: "———————————————\nCommencement Process",
