@@ -5,11 +5,12 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  PermissionsBitField,
 } = require("discord.js");
 const { DateTime } = require("luxon");
 
 const ALLOWED_ROLE_IDS = ["1370176650234302484", "1372312806233215070"];
+const XBOX_SERVER_ID = "1372312806107512894";
+const PLAYSTATION_SERVER_ID = "1369495333574545559";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -53,10 +54,13 @@ module.exports = {
 
     const unix = Math.floor(dt.toSeconds());
 
+    const guildId = interaction.guildId;
+    const label = guildId === PLAYSTATION_GUILD_ID ? "**PSN:**" : "**Xbox Gamertag:**";
+
     const embed = new EmbedBuilder()
       .setColor(type === "Primary" ? 0x0099ff : 0xffa500)
-      .setTitle("Global Roleplay™ PlayStation | Roleplay Session")
-      .setDescription(`**Roleplay Session**\n> This message upholds all information regarding the upcoming roleplay session hosted by **Global Roleplay**.\n> Please take your time to review the details below and if any questions arise, please ask the host.\n\n**PSN:** ${gamertag}`)
+      .setTitle("Global Roleplay™ " + (guildId === PLAYSTATION_GUILD_ID ? "PlayStation" : "Xbox") + " | Roleplay Session")
+      .setDescription(`**Roleplay Session**\n> This message upholds all information regarding the upcoming roleplay session hosted by **Global Roleplay**.\n> Please take your time to review the details below and if any questions arise, please ask the host.\n\n${label} ${gamertag}`)
       .addFields(
         {
           name: "———————————————\nCommencement Process",
@@ -107,7 +111,7 @@ module.exports = {
 
       attendance[i.customId].push(mention);
 
-      embed.spliceFields(3, 3, 
+      embed.spliceFields(3, 3,
         { name: "✅ Attending", value: attendance.attending.join("\n") || "–", inline: true },
         { name: "❌ Not Attending", value: attendance.cant.join("\n") || "–", inline: true },
         { name: "🕰️ Late", value: attendance.late.join("\n") || "–", inline: true }
