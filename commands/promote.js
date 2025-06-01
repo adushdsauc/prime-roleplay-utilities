@@ -69,43 +69,66 @@ module.exports = {
       return interaction.editReply({ content: "❌ Could not determine platform or member not found." });
     }
 
-    const departmentRoles = Object.entries(roleMappings[department]);
-    let currentIndex = -1;
-    for (let i = departmentRoles.length - 1; i >= 0; i--) {
-      const [, roleObj] = departmentRoles[i];
-      if (member.roles.cache.has(roleObj[platform].roleId)) {
-        currentIndex = i;
+    const ranks = roleMappings[department]?.order;
+    if (!ranks) {
+      return interaction.editReply({ content: "❌ Invalid department configuration." });
+    }
+
+    // Find current rank
+    let currentRank = null;
+    for (const rank of ranks) {
+      const roleId = roleMappings[department][rank]?.[platform]?.roleId;
+      if (member.roles.cache.has(roleId)) {
+        currentRank = rank;
         break;
       }
     }
 
-    if (currentIndex === -1 || currentIndex === departmentRoles.length - 1) {
-      return interaction.editReply({ content: "❌ Cannot promote — not in a valid rank or already at top rank." });
+    if (!currentRank) {
+      return interaction.editReply({ content: "❌ Cannot promote — user is not in a valid rank." });
     }
 
-    const [currentRank, currentRole] = departmentRoles[currentIndex];
-    const [nextRank, nextRole] = departmentRoles[currentIndex + 1];
-
-    for (const [, roleObj] of departmentRoles) {
-      await member.roles.remove(roleObj[platform].roleId).catch(() => {});
+    const currentIndex = ranks.indexOf(currentRank);
+    if (currentIndex === -1 || currentIndex === ranks.length - 1) {
+      return interaction.editReply({ content: "❌ Cannot promote — already at top rank." });
     }
-    await member.roles.add(nextRole[platform].roleId).catch(() => {});
 
-    const range = nextRole[platform].range;
-    const prefix = range.match(/[A-Za-z\-]+/g)?.[0]?.trim() || "";
+    const nextRank = ranks[currentIndex + 1];
+    const nextRoleId = roleMappings[department][nextRank]?.[platform]?.roleId;
+
+    if (!nextRoleId) {
+      return interaction.editReply({ content: "❌ Next rank role ID not found." });
+    }
+
+    // Remove all roles for department before adding the next one
+    for (const rank of ranks) {
+      const roleId = roleMappings[department][rank]?.[platform]?.roleId;
+      if (roleId) {
+        await member.roles.remove(roleId).catch(() => {});
+      }
+    }
+
+    await member.roles.add(nextRoleId).catch(() => {});
+
+    // Handle callsign assignment
+    const range = roleMappings[department][nextRank]?.[platform]?.range;
+    if (!range) {
+      return interaction.editReply({ content: "❌ No callsign range found for this role." });
+    }
+
+    const prefix = range.match(/[A-Za-z\-]+/)?.[0] || "";
     const matches = range.match(/\d+/g);
-    let start = null;
-    let end = null;
-    if (matches && matches.length >= 1) {
-      start = parseInt(matches[0], 10);
-      end = parseInt(matches[1] || matches[0], 10);
-    } else {
-      return interaction.editReply({ content: "❌ Invalid callsign range format in roleMappings." });
+    const start = parseInt(matches?.[0], 10);
+    const end = parseInt(matches?.[1] ?? matches?.[0], 10);
+
+    if (isNaN(start) || isNaN(end)) {
+      return interaction.editReply({ content: "❌ Invalid callsign range format." });
     }
 
     const usedNumbers = new Set(
       (await Callsign.find({ department, platform })).map(c => c.number)
     );
+
     let assignedNumber = null;
     for (let i = start; i <= end; i++) {
       if (!usedNumbers.has(i)) {
@@ -126,15 +149,17 @@ module.exports = {
       { upsert: true, new: true }
     );
 
+    // Set nickname
     const newNickname = `${callsign} | ${user.username}`.slice(0, 32);
-    if (member.nickname !== newNickname) {
-      try {
+    try {
+      if (member.nickname !== newNickname) {
         await member.setNickname(newNickname);
-      } catch (err) {
-        console.warn("⚠️ Failed to update nickname:", err.message);
       }
+    } catch (err) {
+      console.warn("⚠️ Failed to update nickname:", err.message);
     }
 
+    // Send confirmation embed
     const embed = new EmbedBuilder()
       .setTitle("📈 Promotion Successful")
       .setDescription(`<@${user.id}> was promoted to **${nextRank}**`)
