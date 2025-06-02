@@ -76,13 +76,13 @@ async function sendApplicationLog(interaction, session, result, authStatus) {
 
   if (logChannel?.isTextBased()) {
     const logEmbed = new EmbedBuilder()
-      .setTitle("📅 Application Completed")
+      .setTitle("Application Completed")
       .setDescription(`<@${userId}> has completed an application.`)
       .addFields(
         { name: "Platform", value: session.platform, inline: true },
         { name: "Department", value: department, inline: true },
         { name: "Score", value: `${result.score}/10`, inline: true },
-        { name: "Authentication Status", value: authStatus, inline: true },
+        { name: "Status", value: authStatus, inline: true },
         {
           name: "Answers",
           value: session.questions.map((q, i) => `**Q${i + 1}:** ${q.question}\n**A:** ${session.answers[i]}`).join("\n\n").slice(0, 1024)
