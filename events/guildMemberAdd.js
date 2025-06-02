@@ -138,7 +138,11 @@ module.exports = {
             console.warn(msg);
             if (logChannel) logChannel.send(msg).catch(() => {});
             await new Promise(res => setTimeout(res, 3000));
-            await freshMember.roles.add(role).catch(() => {});
+await freshMember.roles.add(role).catch(err => {
+  const retryMsg = `❌ Retry failed for role ${roleId} on ${member.user.tag}: ${err.message}`;
+  console.warn(retryMsg);
+  if (logChannel) logChannel.send(retryMsg).catch(() => {});
+});
           });
         }
       }
