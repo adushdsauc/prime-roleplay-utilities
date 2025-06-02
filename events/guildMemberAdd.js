@@ -5,7 +5,7 @@ const Callsign = require("../models/Callsign");
 
 const XBOX_GUILD_ID = "1372312806107512894";
 const PLAYSTATION_GUILD_ID = "1369495333574545559";
-const MASTER_LOG_CHANNEL_ID = "137888888888888888"; // Fallback log channel ID
+const MASTER_LOG_CHANNEL_ID = "1379209193520627743";
 
 const LOG_CHANNELS = {
   [XBOX_GUILD_ID]: "1372312809500835996",
@@ -120,6 +120,10 @@ module.exports = {
       if (accepted?.department) {
         department = accepted.department.charAt(0).toUpperCase() + accepted.department.slice(1).toLowerCase();
         callsign = await generateCallsign(member.id, department, platform);
+      } else {
+        const msg = `⚠️ No department found in AcceptedUser for ${member.user.tag}`;
+        console.warn(msg);
+        if (logChannel) logChannel.send(msg).catch(() => {});
       }
     } catch (err) {
       const msg = `❌ Error assigning department or generating callsign for ${member.user.tag}: ${err.message}`;
@@ -158,6 +162,10 @@ module.exports = {
       if (addedRoles.length === 0) {
         const msg = `⚠️ ${member.user.tag} (${member.id}) joined ${department} but no roles were successfully added.`;
         console.warn(msg);
+        if (logChannel) logChannel.send(msg).catch(() => {});
+      } else {
+        const msg = `✅ Successfully added roles [${addedRoles.join(", ")}] to ${member.user.tag}`;
+        console.log(msg);
         if (logChannel) logChannel.send(msg).catch(() => {});
       }
     } catch (err) {
