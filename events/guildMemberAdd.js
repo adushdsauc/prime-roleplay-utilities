@@ -26,17 +26,16 @@ const ROLE_IDS = {
   }
 };
 
-// ✅ Optimized callsign generator
-async function generateCallsign(discordId, department, platform) {
-  const ranges = {
-    Civilian: { start: 1250, end: 1750, prefix: "Civ" },
-    PSO: { start: 1251, end: 2000, prefix: "C" },
-    SAFR: { start: 1, end: 100, prefix: "FF-R" },
-  };
+const ranges = {
+  CIVILIAN: { start: 1250, end: 1750, prefix: "Civ" },
+  PSO: { start: 1251, end: 2000, prefix: "C" },
+  SAFR: { start: 1, end: 100, prefix: "FF-R" },
+};
 
-  const range = ranges[department];
-  if (!range) throw new Error(`Unknown department: ${department}`)
-  if (!range) throw new Error(`Unknown department: ${department}`);
+const formattedDepartment = department.toUpperCase();
+const range = ranges[formattedDepartment];
+if (!range) throw new Error(`Unknown department: ${department}`);
+
 
   const existing = await Callsign.find({ department, platform });
   const usedNumbers = new Set(
