@@ -132,7 +132,8 @@ module.exports = {
     }
 
     try {
-      const roleIds = [...(config.always || []), ...(config[department] || [])];
+const departmentKey = department.toUpperCase();
+const roleIds = [...(config.always || []), ...(config[departmentKey] || [])];
       const addedRoles = [];
       for (const roleId of roleIds) {
         let role = member.guild.roles.cache.get(roleId) || await member.guild.roles.fetch(roleId).catch(() => null);
