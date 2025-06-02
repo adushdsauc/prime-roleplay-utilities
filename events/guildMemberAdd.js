@@ -61,6 +61,11 @@ module.exports = {
   async execute(member) {
     console.log("✅ guildMemberAdd fired for:", member.user.tag);
 
+    if (!member || !member.user || !member.guild) {
+      console.warn(`⚠️ Invalid GuildMember object`);
+      return;
+    }
+
     const guildId = member.guild.id;
     const config = ROLE_IDS[guildId];
     const platform = config?.platform;
@@ -72,6 +77,8 @@ module.exports = {
       if (logChannel) logChannel.send(msg).catch(() => {});
       return;
     }
+
+    const freshMember = await member.guild.members.fetch(member.id).catch(() => member);
 
     try {
       const cachedInvites = inviteCache.get(guildId);
@@ -122,18 +129,23 @@ module.exports = {
 
     try {
       const roleIds = [...(config.always || []), ...(config[department] || [])];
+      const addedRoles = [];
       for (const roleId of roleIds) {
         const role = member.guild.roles.cache.get(roleId);
         if (role) {
-          await member.roles.add(role).catch(async (err) => {
+          await freshMember.roles.add(role).then(() => addedRoles.push(roleId)).catch(async (err) => {
             const msg = `❌ Role assignment failed for ${member.user.tag} (Role ID: ${roleId}): ${err.message}`;
             console.warn(msg);
             if (logChannel) logChannel.send(msg).catch(() => {});
-            // Retry after delay
             await new Promise(res => setTimeout(res, 3000));
-            await member.roles.add(role).catch(() => {});
+            await freshMember.roles.add(role).catch(() => {});
           });
         }
+      }
+      if (addedRoles.length === 0) {
+        const msg = `⚠️ ${member.user.tag} (${member.id}) joined ${department} but no roles were successfully added.`;
+        console.warn(msg);
+        if (logChannel) logChannel.send(msg).catch(() => {});
       }
     } catch (err) {
       const msg = `❌ Bulk role assignment error for ${member.user.tag}: ${err.message}`;
@@ -143,13 +155,12 @@ module.exports = {
 
     try {
       const nickname = `${callsign} | ${member.user.username}`;
-      await member.setNickname(nickname).catch(async (err) => {
+      await freshMember.setNickname(nickname).catch(async (err) => {
         const msg = `❌ Failed to set nickname for ${member.user.tag}: ${err.message}`;
         console.warn(msg);
         if (logChannel) logChannel.send(msg).catch(() => {});
-        // Retry after delay
         await new Promise(res => setTimeout(res, 3000));
-        await member.setNickname(nickname).catch(() => {});
+        await freshMember.setNickname(nickname).catch(() => {});
       });
     } catch (err) {
       const msg = `❌ Nickname setting exception for ${member.user.tag}: ${err.message}`;
