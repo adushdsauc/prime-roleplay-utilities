@@ -1,4 +1,4 @@
-// ✅ Modified handleAnswer() to match the exact flow of your manual approval system
+// ✅ Modified handleAnswer() to always send the application log
 // File: applicationSessionHandler.js
 
 const path = require("path");
@@ -63,15 +63,47 @@ function buildQuestionMenu(userId) {
   return { embed, row };
 }
 
+async function sendApplicationLog(interaction, session, result, authStatus) {
+  const userId = interaction.user.id;
+  const departmentMap = {
+    civilian: "Civilian",
+    pso: "PSO",
+    safr: "SAFR"
+  };
+  const department = departmentMap[session.department?.toLowerCase()] || "Civilian";
+  const logChannelId = process.env.APPLICATION_LOG_CHANNEL_ID;
+  const logChannel = await interaction.client.channels.fetch(logChannelId).catch(() => null);
+
+  if (logChannel?.isTextBased()) {
+    const logEmbed = new EmbedBuilder()
+      .setTitle("📅 Application Completed")
+      .setDescription(`<@${userId}> has completed an application.`)
+      .addFields(
+        { name: "Platform", value: session.platform, inline: true },
+        { name: "Department", value: department, inline: true },
+        { name: "Score", value: `${result.score}/10`, inline: true },
+        { name: "Authentication Status", value: authStatus, inline: true },
+        {
+          name: "Answers",
+          value: session.questions.map((q, i) => `**Q${i + 1}:** ${q.question}\n**A:** ${session.answers[i]}`).join("\n\n").slice(0, 1024)
+        }
+      )
+      .setColor(result.passed ? 0x00ff00 : 0xff0000)
+      .setTimestamp();
+
+    await logChannel.send({ embeds: [logEmbed] });
+  }
+}
+
 async function handleAnswer(interaction) {
   const userId = interaction.user.id;
   const selected = interaction.values[0];
   const session = sessions.get(userId);
 
   if (!session || !Array.isArray(session.answers) || !session.questions?.length) {
-    console.warn(`❌ No valid session found for ${interaction.user.tag}. Prompting user to restart application.`);
+    console.warn(`❌ No valid session found for ${interaction.user.tag}.`);
     await interaction.reply({
-      content: "⚠️ Your session has expired or is invalid. Please run `/apply` again to restart your application.",
+      content: "⚠️ Your session has expired or is invalid. Please run `/apply` again.",
       ephemeral: true
     });
     return;
@@ -91,7 +123,11 @@ async function handleAnswer(interaction) {
 
     await interaction.update({ embeds: [reviewEmbed], components: [] });
 
-    if (!passed) return sessions.delete(userId);
+    if (!passed) {
+      await sendApplicationLog(interaction, session, result, "Authentication Failure");
+      sessions.delete(userId);
+      return;
+    }
 
     await AcceptedUser.findOneAndUpdate(
       { discordId: userId },
@@ -107,7 +143,6 @@ async function handleAnswer(interaction) {
 
     await interaction.user.send({ embeds: [loginEmbed] });
 
-    // 🔄 Poll for verification
     let attempts = 0;
     const interval = setInterval(async () => {
       const verified = await AuthUser.findOne({ discordId: userId });
@@ -143,61 +178,7 @@ async function handleAnswer(interaction) {
 
         await interaction.user.send({ embeds: [inviteEmbed] });
 
-        const logChannelId = process.env.APPLICATION_LOG_CHANNEL_ID;
-        const logChannel = await interaction.client.channels.fetch(logChannelId).catch(() => null);
-        if (logChannel?.isTextBased()) {
-          const logEmbed = new EmbedBuilder()
-            .setTitle("📅 New Auto-Approved Application")
-            .setDescription(`<@${userId}> has been auto-approved and verified.`)
-            .addFields(
-              { name: "Platform", value: platformLabel, inline: true },
-              { name: "Department", value: session.department, inline: true },
-              { name: "Score", value: `${result.score}/10`, inline: true },
-              { name: "Answers", value: session.questions.map((q, i) => `**Q${i + 1}:** ${q.question}\n**A:** ${session.answers[i]}`).join("\n\n").slice(0, 1024) }
-            )
-            .setColor(0x111111)
-            .setTimestamp();
-
-          await logChannel.send({ embeds: [logEmbed] });
-        }
-
-        const departmentMap = {
-          civilian: "Civilian",
-          pso: "PSO",
-          safr: "SAFR"
-        };
-        const department = departmentMap[session.department?.toLowerCase()] || "Civilian";
-
-        try {
-          await AcceptedUser.findOneAndUpdate(
-            { discordId: userId },
-            { discordId: userId, department },
-            { upsert: true, new: true }
-          );
-          console.log(`✅ Saved accepted user ${userId} to database with department ${department}`);
-        } catch (err) {
-          console.error("❌ Failed to save accepted user:", err);
-        }
-
-        const guildId = interaction.guildId;
-        const guild = await interaction.client.guilds.fetch(guildId).catch(() => null);
-        const member = await guild?.members.fetch(userId).catch(() => null);
-
-        if (member) {
-          const APPLIED_ROLE = "1368345426482167818";
-          const ACCEPTED_ROLE = "1368345401815465985";
-
-          try {
-            await member.roles.remove(APPLIED_ROLE);
-            await member.roles.add(ACCEPTED_ROLE);
-            console.log(`✅ Updated roles for ${userId}`);
-          } catch (err) {
-            console.error(`❌ Failed to update roles for ${userId}:`, err);
-          }
-        } else {
-          console.warn(`⚠️ Could not find guild member ${userId}`);
-        }
-
+        await sendApplicationLog(interaction, session, result, "Authenticated");
         sessions.delete(userId);
         return;
       }
@@ -212,6 +193,7 @@ async function handleAnswer(interaction) {
               .setColor(0x111111)
           ]
         });
+        await sendApplicationLog(interaction, session, result, "Authentication Timeout");
         sessions.delete(userId);
       }
     }, 10000);
@@ -223,5 +205,5 @@ async function handleAnswer(interaction) {
 
 module.exports = {
   startApplication,
-  handleAnswer,
+  handleAnswer
 };
