@@ -5,7 +5,7 @@ const Callsign = require("../models/Callsign");
 
 const XBOX_GUILD_ID = "1372312806107512894";
 const PLAYSTATION_GUILD_ID = "1369495333574545559";
-const MASTER_LOG_CHANNEL_ID = "1379209193520627743"; // Fallback log channel ID
+const MASTER_LOG_CHANNEL_ID = "137888888888888888"; // Fallback log channel ID
 
 const LOG_CHANNELS = {
   [XBOX_GUILD_ID]: "1372312809500835996",
@@ -131,18 +131,27 @@ module.exports = {
       const roleIds = [...(config.always || []), ...(config[department] || [])];
       const addedRoles = [];
       for (const roleId of roleIds) {
-        const role = member.guild.roles.cache.get(roleId);
-        if (role) {
-          await freshMember.roles.add(role).then(() => addedRoles.push(roleId)).catch(async (err) => {
-            const msg = `❌ Role assignment failed for ${member.user.tag} (Role ID: ${roleId}): ${err.message}`;
-            console.warn(msg);
-            if (logChannel) logChannel.send(msg).catch(() => {});
-            await new Promise(res => setTimeout(res, 3000));
-await freshMember.roles.add(role).catch(err => {
-  const retryMsg = `❌ Retry failed for role ${roleId} on ${member.user.tag}: ${err.message}`;
-  console.warn(retryMsg);
-  if (logChannel) logChannel.send(retryMsg).catch(() => {});
-});
+        let role = member.guild.roles.cache.get(roleId) || await member.guild.roles.fetch(roleId).catch(() => null);
+        if (!role) {
+          const msg = `⚠️ Role ID ${roleId} not found in guild cache for ${member.user.tag}`;
+          console.warn(msg);
+          if (logChannel) logChannel.send(msg).catch(() => {});
+          continue;
+        }
+
+        try {
+          await freshMember.roles.add(role);
+          addedRoles.push(roleId);
+        } catch (err) {
+          const msg = `❌ Role assignment failed for ${member.user.tag} (Role ID: ${roleId}): ${err.message}`;
+          console.warn(msg);
+          if (logChannel) logChannel.send(msg).catch(() => {});
+
+          await new Promise(res => setTimeout(res, 3000));
+          await freshMember.roles.add(role).catch(retryErr => {
+            const retryMsg = `❌ Retry failed for role ${roleId} on ${member.user.tag}: ${retryErr.message}`;
+            console.warn(retryMsg);
+            if (logChannel) logChannel.send(retryMsg).catch(() => {});
           });
         }
       }
