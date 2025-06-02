@@ -26,23 +26,25 @@ const ROLE_IDS = {
   }
 };
 
-const ranges = {
-  CIVILIAN: { start: 1250, end: 1750, prefix: "Civ" },
-  PSO: { start: 1251, end: 2000, prefix: "C" },
-  SAFR: { start: 1, end: 100, prefix: "FF-R" },
-};
+async function generateCallsign(discordId, department, platform) {
+  const ranges = {
+    CIVILIAN: { start: 1250, end: 1750, prefix: "Civ" },
+    PSO: { start: 1251, end: 2000, prefix: "C" },
+    SAFR: { start: 1, end: 100, prefix: "FF-R" },
+  };
 
-const formattedDepartment = department.toUpperCase();
-const range = ranges[formattedDepartment];
-if (!range) throw new Error(`Unknown department: ${department}`);
-
+  const formattedDepartment = department.toUpperCase();
+  const range = ranges[formattedDepartment];
+  if (!range) throw new Error(`Unknown department: ${department}`);
 
   const existing = await Callsign.find({ department, platform });
   const usedNumbers = new Set(
-    existing.map(cs => {
-      const match = cs.number.toString().match(/\d+/); // ensure it's treated as string
-      return match ? parseInt(match[0]) : null;
-    }).filter(Boolean)
+    existing
+      .map(cs => {
+        const match = cs.number.toString().match(/\d+/);
+        return match ? parseInt(match[0]) : null;
+      })
+      .filter(Boolean)
   );
 
   let number = range.start;
@@ -56,8 +58,8 @@ if (!range) throw new Error(`Unknown department: ${department}`);
   await Callsign.create({
     discordId,
     department,
-    number, // ✅ Stored as a Number in Mongo
-    platform
+    number,
+    platform,
   });
 
   return fullCallsign;
