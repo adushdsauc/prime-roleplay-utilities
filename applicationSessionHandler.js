@@ -124,7 +124,7 @@ async function handleAnswer(interaction) {
     await interaction.update({ embeds: [reviewEmbed], components: [] });
 
     if (!passed) {
-      await sendApplicationLog(interaction, session, result, "Authentication Failure");
+      await sendApplicationLog(interaction, session, result, "Failure");
       sessions.delete(userId);
       return;
     }
@@ -178,7 +178,7 @@ async function handleAnswer(interaction) {
 
         await interaction.user.send({ embeds: [inviteEmbed] });
 
-        await sendApplicationLog(interaction, session, result, "Authenticated");
+        await sendApplicationLog(interaction, session, result, "Passed");
         sessions.delete(userId);
         return;
       }
