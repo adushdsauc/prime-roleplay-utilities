@@ -68,6 +68,15 @@ async function handleAnswer(interaction) {
   const selected = interaction.values[0];
   const session = sessions.get(userId);
 
+  if (!session || !Array.isArray(session.answers) || !session.questions?.length) {
+    console.warn(`❌ No valid session found for ${interaction.user.tag}. Prompting user to restart application.`);
+    await interaction.reply({
+      content: "⚠️ Your session has expired or is invalid. Please run `/apply` again to restart your application.",
+      ephemeral: true
+    });
+    return;
+  }
+
   session.answers.push(selected);
   session.currentIndex++;
 
