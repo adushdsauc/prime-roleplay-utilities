@@ -75,7 +75,7 @@ module.exports = {
         {
           name: "———————————————\nSession Details",
           value:
-            `> **Start Time:** <t:${unix}:F> (<t:${unix}:R>)\n> • **Session Type:** ${type} | Scenario Based\n> • **Area of Play:** *To Be Announced*\n> • [Global Roleplay Booklet](https://example.com) • [Map](https://example.com) • [Timezones](https://example.com)`,
+            `> **Start Time:** <t:${unix}:F> (<t:${unix}:R>)\n> • **Session Type:** ${type} | Scenario Based\n> • **Area of Play:** *To Be Announced*\n> • [Prime Roleplay Booklet](https://example.com) • [Map](https://example.com) • [Timezones](https://example.com)`,
         },
         {
           name: "✅ Attending", value: "–", inline: true
