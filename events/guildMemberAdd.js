@@ -159,10 +159,17 @@ module.exports = {
           });
         }
       }
-      if (addedRoles.length === 0) {
-        const msg = `⚠️ ${member.user.tag} (${member.id}) joined ${department} but no roles were successfully added.`;
-        console.warn(msg);
-        if (logChannel) logChannel.send(msg).catch(() => {});
+      if (addedRoles.length === 0 && department && config[department]) {
+        const retryRoles = [...(config.always || []), ...(config[department] || [])];
+        await freshMember.roles.add(retryRoles).then(() => {
+          const msg = `🔁 Fallback retry: successfully added department roles for ${member.user.tag}`;
+          console.log(msg);
+          if (logChannel) logChannel.send(msg).catch(() => {});
+        }).catch(err => {
+          const msg = `❌ Final retry failed to assign department roles for ${member.user.tag}: ${err.message}`;
+          console.warn(msg);
+          if (logChannel) logChannel.send(msg).catch(() => {});
+        });
       } else {
         const msg = `✅ Successfully added roles [${addedRoles.join(", ")}] to ${member.user.tag}`;
         console.log(msg);
