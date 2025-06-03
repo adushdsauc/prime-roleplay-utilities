@@ -16,14 +16,14 @@ const ROLE_IDS = {
   [XBOX_GUILD_ID]: {
     platform: "xbox",
     always: ["1372312806136877186"],
-    Civilian: ["1372312806145392768", "1372312806220890245"],
+    CIVILIAN: ["1372312806145392768", "1372312806220890245"],
     PSO: ["1372312806220890247", "1372312806204117013"],
     SAFR: ["1372312806166102076", "1372312806220890246"],
   },
   [PLAYSTATION_GUILD_ID]: {
     platform: "playstation",
     always: ["1369497153189187594"],
-    Civilian: ["1370878408573063228", "1369497197489684650"],
+    CIVILIAN: ["1370878408573063228", "1369497197489684650"],
     PSO: ["1369497170432229417", "1370878407856099408"],
     SAFR: ["1369520232426770453", "1370878410364162058"],
   },
@@ -132,7 +132,7 @@ module.exports = {
     }
 
     try {
-const departmentKey = department.toUpperCase();
+const departmentKey = Object.keys(config).find(k => k.toLowerCase() === department.toLowerCase());
 const roleIds = [...(config.always || []), ...(config[departmentKey] || [])];
       const addedRoles = [];
       for (const roleId of roleIds) {
