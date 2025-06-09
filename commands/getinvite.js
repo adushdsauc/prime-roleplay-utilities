@@ -11,12 +11,12 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("getinvite")
     .setDescription("Staff only: Generate 1-use, 24h invites to Economy + selected platform")
-    .addStringOption(option =>
-          .addUserOption(option =>
+    .addUserOption(option =>
       option.setName("user")
         .setDescription("User that will use the invite")
         .setRequired(true)
-    ),
+    )
+    .addStringOption(option =>
       option.setName("platform")
         .setDescription("Select a platform")
         .setRequired(true)
@@ -25,7 +25,8 @@ module.exports = {
           { name: "PlayStation", value: "playstation" }
         )
     )
-    .setDefaultMemberPermissions(PermissionFlagsBits.MoveMembers), // ✅ Only visible to users with "Move Members"
+    .setDefaultMemberPermissions(PermissionFlagsBits.MoveMembers),
+};
 
   async execute(interaction) {
     const requester = interaction.member;
