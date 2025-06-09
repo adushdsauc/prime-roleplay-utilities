@@ -68,7 +68,7 @@ module.exports = {
         .setFooter({ text: "Prime Roleplay Security" })
         .setTimestamp();
 
-      return interaction.reply({ embeds: [embed], ephemeral: true });
+      return interaction.reply({ embeds: [embed] });
 
     } catch (err) {
       console.error("❌ /getinvite error:", err);
