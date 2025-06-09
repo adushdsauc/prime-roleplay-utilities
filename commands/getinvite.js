@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require("discord.js");
+const createSecureInvite = require("../utils/createSecureInvite");
 
 const STAFF_ROLE_ID = "1375605232226140300";
 
@@ -11,6 +12,11 @@ module.exports = {
     .setName("getinvite")
     .setDescription("Staff only: Generate 1-use, 24h invites to Economy + selected platform")
     .addStringOption(option =>
+          .addUserOption(option =>
+      option.setName("user")
+        .setDescription("User that will use the invite")
+        .setRequired(true)
+    ),
       option.setName("platform")
         .setDescription("Select a platform")
         .setRequired(true)
@@ -29,12 +35,12 @@ module.exports = {
         content: "❌ You do not have permission to use this command."
       });
     }
-
+    
+    const target = interaction.options.getUser("user");
     const platform = interaction.options.getString("platform");
     const platformGuildId = platform === "xbox" ? XBOX_GUILD_ID : PLAYSTATION_GUILD_ID;
 
     try {
-      // Economy invite
       const econGuild = await interaction.client.guilds.fetch(ECONOMY_GUILD_ID);
       const econChannel = econGuild.systemChannel || econGuild.channels.cache.find(ch =>
         ch.isTextBased() && ch.permissionsFor(econGuild.members.me).has("CreateInstantInvite")
@@ -46,8 +52,15 @@ module.exports = {
         maxAge: 86400,
         unique: true,
         reason: `Staff-generated Economy invite via /getinvite`
+      // Economy invite stored in DB
+      const econInvite = await createSecureInvite({
+        client: interaction.client,
+        guildId: ECONOMY_GUILD_ID,
+        userId: target.id,
+        platform
       });
 
+      // Platform invite
       // Platform invite
       const platformGuild = await interaction.client.guilds.fetch(platformGuildId);
       const platformChannel = platformGuild.systemChannel || platformGuild.channels.cache.find(ch =>
@@ -60,15 +73,23 @@ module.exports = {
         maxAge: 86400,
         unique: true,
         reason: `Staff-generated ${platform} invite via /getinvite`
+      // Platform invite stored in DB
+      const platformInvite = await createSecureInvite({
+        client: interaction.client,
+        guildId: platformGuildId,
+        userId: target.id,
+        platform
       });
 
       // ✅ Embed
       const embed = new EmbedBuilder()
         .setTitle("Join the server!")
         .setDescription("These invites are valid for 24 hours and can only be used once.")
-        .addFields(
+          .addFields(
           { name: "Economy Server", value: `[Click to Join](${econInvite.url})`, inline: true },
           { name: platform === "xbox" ? "Xbox Server" : "PlayStation Server", value: `[Click to Join](${platformInvite.url})`, inline: true }
+          { name: "Economy Server", value: econInvite ? `[Click to Join](${econInvite})` : "Invite failed.", inline: true },
+          { name: platform === "xbox" ? "Xbox Server" : "PlayStation Server", value: platformInvite ? `[Click to Join](${platformInvite})` : "Invite failed.", inline: true }
         )
         .setColor(0x00B0F4)
         .setFooter({ text: "Prime Roleplay Security" })
