@@ -7,6 +7,8 @@ const XBOX_GUILD_ID = "1372312806107512894";
 const PLAYSTATION_GUILD_ID = "1369495333574545559";
 const MASTER_LOG_CHANNEL_ID = "1379209193520627743";
 
+const PRIVATE_GUILD_IDS = [1369495333574545559, 1372312806107512894, 1369029438351867964];
+
 const LOG_CHANNELS = {
   [XBOX_GUILD_ID]: "1372312809500835996",
   [PLAYSTATION_GUILD_ID]: "1371862183058608178",
@@ -67,6 +69,10 @@ module.exports = {
     }
 
     const guildId = member.guild.id;
+    
+       if (!PRIVATE_GUILD_IDS.includes(guildId)) {
+      return;
+    }
     const config = ROLE_IDS[guildId];
     const platform = config?.platform;
     const logChannel = member.guild.channels.cache.get(LOG_CHANNELS[guildId]) || member.client.channels.cache.get(MASTER_LOG_CHANNEL_ID);
