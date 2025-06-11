@@ -21,6 +21,7 @@ const LOG_CHANNEL_ID = "1375641960651689984";
 const createSecureInvite = require("./utils/createSecureInvite");
 const { startApplication } = require("./applicationSessionHandler"); // place at top of index.js
 const activeShifts = new Map();
+const summarizeShifts = require('./utils/weeklyShiftSummary');
 
 const SHIFT_LOG_CHANNELS = {
   '1372312806107512894': '1376607799622238469', // Xbox server → Xbox log
@@ -618,7 +619,10 @@ if (interaction.isStringSelectMenu() && interaction.customId === "application_ty
 
 client.once("ready", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
-
+  
+globalThis.discordClient = client;
+summarizeShifts(client); // optional test run on startup
+  
   const forum = await client.channels.fetch('1374934648857034863');
   console.log("Available tags:", forum.availableTags);
 
