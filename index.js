@@ -88,10 +88,10 @@ if (interaction.isButton()) {
     });
 
     const embed = EmbedBuilder.from(interaction.message.embeds[0])
-      .setColor(0x2ecc71)
+      .setColor(0x2B2D31)
       .spliceFields(2, 10) // remove old shift info if any
       .addFields(
-        { name: "Status", value: "✅ Shift Started", inline: false },
+        { name: "Status", value: "Shift Started", inline: false },
         { name: "Started", value: `<t:${Math.floor(now / 1000)}:T>`, inline: false },
         { name: "Shift ID", value: `\`${shiftId}\``, inline: false }
       );
@@ -106,7 +106,7 @@ if (interaction.isButton()) {
     shift.accumulatedTime += Date.now() - shift.lastResumedAt;
     shift.onBreak = true;
 
-    const embed = updateEmbedStatus("☕ Break Started", 0xf1c40f, `Break started <t:${Math.floor(Date.now() / 1000)}:T>`);
+    const embed = updateEmbedStatus("Break Started", 0x2B2D31, `Break started <t:${Math.floor(Date.now() / 1000)}:T>`);
     return interaction.update({ embeds: [embed], components: interaction.message.components });
   }
 
@@ -117,7 +117,7 @@ if (interaction.isButton()) {
     shift.onBreak = false;
     shift.lastResumedAt = Date.now();
 
-    const embed = updateEmbedStatus("🔄 Break Ended", 0x3498db, `Back on duty <t:${Math.floor(Date.now() / 1000)}:T>`);
+    const embed = updateEmbedStatus("Break Ended", 0x2B2D31, `Back on duty <t:${Math.floor(Date.now() / 1000)}:T>`);
     return interaction.update({ embeds: [embed], components: interaction.message.components });
   }
 
@@ -144,10 +144,10 @@ if (interaction.isButton()) {
     activeShifts.delete(userId);
 
     const embed = EmbedBuilder.from(interaction.message.embeds[0])
-      .setColor(0xe74c3c)
+      .setColor(0x2B2D31)
       .spliceFields(2, 10)
       .addFields(
-        { name: "Status", value: "🔚 Shift Ended", inline: false },
+        { name: "Status", value: "Shift Ended", inline: false },
         { name: "Total Time", value: `${totalTime} seconds`, inline: false },
         { name: "Shift ID", value: `\`${shift.shiftId}\``, inline: false }
       );
