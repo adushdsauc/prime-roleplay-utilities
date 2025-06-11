@@ -621,7 +621,6 @@ client.once("ready", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   
 globalThis.discordClient = client;
-summarizeShifts(client); // optional test run on startup
   
   const forum = await client.channels.fetch('1374934648857034863');
   console.log("Available tags:", forum.availableTags);
