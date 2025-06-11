@@ -50,6 +50,91 @@ for (const file of commandFiles) {
 
 client.on("interactionCreate", async (interaction) => {
   try {
+
+const ShiftLog = require('./models/ShiftLog'); // Ensure you import your model
+const { v4: uuidv4 } = require('uuid');
+
+let activeShifts = new Map();
+
+if (interaction.isButton()) {
+  const userId = interaction.user.id;
+
+  if (interaction.customId.startsWith('shift_start_')) {
+    if (activeShifts.has(userId)) {
+      return interaction.reply({ content: '❌ You already have an active shift.', ephemeral: true });
+    }
+
+    const department = interaction.customId.split('shift_start_')[1];
+    const shiftId = uuidv4();
+    const now = Date.now();
+
+    activeShifts.set(userId, {
+      shiftId,
+      department,
+      startedAt: now,
+      lastResumedAt: now,
+      accumulatedTime: 0,
+      guildId: interaction.guildId,
+    });
+
+    return interaction.reply({ content: `✅ Shift started for **${department}**.`, ephemeral: true });
+  }
+
+  if (interaction.customId === 'shift_break') {
+    const shift = activeShifts.get(userId);
+    if (!shift || shift.onBreak) {
+      return interaction.reply({ content: '❌ You are not in an active shift or are already on break.', ephemeral: true });
+    }
+
+    shift.accumulatedTime += Date.now() - shift.lastResumedAt;
+    shift.onBreak = true;
+
+    return interaction.reply({ content: '☕ Break started.', ephemeral: true });
+  }
+
+  if (interaction.customId === 'shift_endbreak') {
+    const shift = activeShifts.get(userId);
+    if (!shift || !shift.onBreak) {
+      return interaction.reply({ content: '❌ You are not on break.', ephemeral: true });
+    }
+
+    shift.onBreak = false;
+    shift.lastResumedAt = Date.now();
+
+    return interaction.reply({ content: '🔄 Break ended. Resume counting time.', ephemeral: true });
+  }
+
+  if (interaction.customId === 'shift_end') {
+    const shift = activeShifts.get(userId);
+    if (!shift) {
+      return interaction.reply({ content: '❌ No active shift to end.', ephemeral: true });
+    }
+
+    if (!shift.onBreak) {
+      shift.accumulatedTime += Date.now() - shift.lastResumedAt;
+    }
+
+    const totalTime = Math.floor(shift.accumulatedTime / 1000);
+
+    await ShiftLog.create({
+      discordId: userId,
+      guildId: shift.guildId,
+      platform: interaction.guildId === '1372312806107512894' ? 'Xbox' : 'PlayStation',
+      department: shift.department,
+      shiftId: shift.shiftId,
+      startedAt: new Date(shift.startedAt),
+      endedAt: new Date(),
+      totalTime,
+    });
+
+    activeShifts.delete(userId);
+
+    return interaction.reply({
+      content: `🔚 Shift ended. Total time: **${totalTime} seconds**.`,
+      ephemeral: true,
+    });
+  }
+}
     
     // Updated to use embeds for all bot messages, including DMs
 if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
