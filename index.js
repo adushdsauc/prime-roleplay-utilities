@@ -162,7 +162,7 @@ if (interaction.customId === 'shift_end') {
 
   return interaction.update({ embeds: [embed], components: interaction.message.components });
 }
-    
+}  
     // Updated to use embeds for all bot messages, including DMs
 if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
   const parts = interaction.customId.split("_");
