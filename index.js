@@ -52,15 +52,26 @@ for (const file of commandFiles) {
 client.on("interactionCreate", async (interaction) => {
   try {
 
-const ShiftLog = require('./models/ShiftLog'); // Ensure you import your model
+const ShiftLog = require('./models/ShiftLog');
 const { v4: uuidv4 } = require('uuid');
+const { EmbedBuilder } = require('discord.js');
 
 if (interaction.isButton()) {
   const userId = interaction.user.id;
+  const platform = interaction.guildId === '1372312806107512894' ? 'Xbox' : 'PlayStation';
+
+  const updateEmbedStatus = (statusText, color, extra = '') => {
+    const embed = EmbedBuilder.from(interaction.message.embeds[0]);
+    embed.setColor(color).addFields(
+      { name: "Status", value: statusText, inline: false },
+      ...(extra ? [{ name: "Info", value: extra, inline: false }] : [])
+    );
+    return embed;
+  };
 
   if (interaction.customId.startsWith('shift_start_')) {
     if (activeShifts.has(userId)) {
-      return interaction.reply({ content: '❌ You already have an active shift.', ephemeral: true });
+      return; // no error shown, user already started
     }
 
     const department = interaction.customId.split('shift_start_')[1];
@@ -76,49 +87,53 @@ if (interaction.isButton()) {
       guildId: interaction.guildId,
     });
 
-    return interaction.reply({ content: `✅ Shift started for **${department}**.`, ephemeral: true });
+    const embed = EmbedBuilder.from(interaction.message.embeds[0])
+      .setColor(0x2ecc71)
+      .spliceFields(2, 10) // remove old shift info if any
+      .addFields(
+        { name: "Status", value: "✅ Shift Started", inline: false },
+        { name: "Started", value: `<t:${Math.floor(now / 1000)}:T>`, inline: false },
+        { name: "Shift ID", value: `\`${shiftId}\``, inline: false }
+      );
+
+    return interaction.update({ embeds: [embed], components: interaction.message.components });
   }
 
   if (interaction.customId === 'shift_break') {
     const shift = activeShifts.get(userId);
-    if (!shift || shift.onBreak) {
-      return interaction.reply({ content: '❌ You are not in an active shift or are already on break.', ephemeral: true });
-    }
+    if (!shift || shift.onBreak) return;
 
     shift.accumulatedTime += Date.now() - shift.lastResumedAt;
     shift.onBreak = true;
 
-    return interaction.reply({ content: '☕ Break started.', ephemeral: true });
+    const embed = updateEmbedStatus("☕ Break Started", 0xf1c40f, `Break started <t:${Math.floor(Date.now() / 1000)}:T>`);
+    return interaction.update({ embeds: [embed], components: interaction.message.components });
   }
 
   if (interaction.customId === 'shift_endbreak') {
     const shift = activeShifts.get(userId);
-    if (!shift || !shift.onBreak) {
-      return interaction.reply({ content: '❌ You are not on break.', ephemeral: true });
-    }
+    if (!shift || !shift.onBreak) return;
 
     shift.onBreak = false;
     shift.lastResumedAt = Date.now();
 
-    return interaction.reply({ content: '🔄 Break ended. Resume counting time.', ephemeral: true });
+    const embed = updateEmbedStatus("🔄 Break Ended", 0x3498db, `Back on duty <t:${Math.floor(Date.now() / 1000)}:T>`);
+    return interaction.update({ embeds: [embed], components: interaction.message.components });
   }
 
   if (interaction.customId === 'shift_end') {
     const shift = activeShifts.get(userId);
-    if (!shift) {
-      return interaction.reply({ content: '❌ No active shift to end.', ephemeral: true });
-    }
+    if (!shift) return;
 
     if (!shift.onBreak) {
       shift.accumulatedTime += Date.now() - shift.lastResumedAt;
     }
 
     const totalTime = Math.floor(shift.accumulatedTime / 1000);
-
     await ShiftLog.create({
       discordId: userId,
       guildId: shift.guildId,
-      platform: interaction.guildId === '1372312806107512894' ? 'Xbox' : 'PlayStation',
+      platform,
       department: shift.department,
       shiftId: shift.shiftId,
       startedAt: new Date(shift.startedAt),
@@ -128,10 +143,16 @@ if (interaction.isButton()) {
 
     activeShifts.delete(userId);
 
-    return interaction.reply({
-      content: `🔚 Shift ended. Total time: **${totalTime} seconds**.`,
-      ephemeral: true,
-    });
+    const embed = EmbedBuilder.from(interaction.message.embeds[0])
+      .setColor(0xe74c3c)
+      .spliceFields(2, 10)
+      .addFields(
+        { name: "Status", value: "🔚 Shift Ended", inline: false },
+        { name: "Total Time", value: `${totalTime} seconds`, inline: false },
+        { name: "Shift ID", value: `\`${shift.shiftId}\``, inline: false }
+      );
+
+    return interaction.update({ embeds: [embed], components: interaction.message.components });
   }
 }
     
