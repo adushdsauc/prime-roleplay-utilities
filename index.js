@@ -266,6 +266,61 @@ await interaction.channel.send({ embeds: [confirmEmbed] });
       await command.execute(interaction, client);
     }
 
+if (interaction.isStringSelectMenu() && interaction.customId === 'select_department') {
+  const PLATFORM_CONFIG = {
+    '1372312806107512894': {
+      name: 'Xbox',
+      logChannelId: '1376607799622238469',
+      roles: {
+        'Civilian': '1372312806220890245',
+        'Public Safety': '1372312806220890247',
+        'SA Fire Rescue': '1372312806220890246',
+      },
+    },
+    '1369495333574545559': {
+      name: 'PlayStation',
+      logChannelId: '1376607873945174119',
+      roles: {
+        'Civilian': '1370878408573063228',
+        'Public Safety': '1370878407856099408',
+        'SA Fire Rescue': '1370878410364162058',
+      },
+    }
+  };
+
+  const guildId = interaction.guild.id;
+  const platform = PLATFORM_CONFIG[guildId];
+  const selected = interaction.values[0];
+
+  if (!platform) {
+    return interaction.reply({ content: '❌ Unsupported server.', ephemeral: true });
+  }
+
+  const requiredRole = platform.roles[selected];
+  if (!interaction.member.roles.cache.has(requiredRole)) {
+    return interaction.reply({ content: `❌ You don't have the required role to clock in as **${selected}**.`, ephemeral: true });
+  }
+
+  const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+
+  const embed = new EmbedBuilder()
+    .setTitle(`${selected} Shift Panel`)
+    .setDescription(`User: <@${interaction.user.id}>\nDepartment: ${selected}\nPlatform: ${platform.name}`)
+    .setFooter({ text: 'Use the buttons below to manage your shift.' })
+    .setColor(0x2B2D31)
+    .setTimestamp();
+
+  const buttons = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`shift_start_${selected}`).setLabel('✅ Start').setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId('shift_break').setLabel('☕ Break').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('shift_endbreak').setLabel('🔄 End Break').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('shift_end').setLabel('🔚 End').setStyle(ButtonStyle.Danger)
+  );
+
+  await interaction.channel.send({ embeds: [embed], components: [buttons] });
+  await interaction.reply({ content: `✅ Clock-in panel created for **${selected}**.`, ephemeral: true });
+}
+    
 if (interaction.isStringSelectMenu() && interaction.customId === "application_type") {
   const selected = interaction.values[0]; // pso, civilian, safr
   await interaction.deferUpdate();
