@@ -60,14 +60,21 @@ if (interaction.isButton()) {
   const userId = interaction.user.id;
   const platform = interaction.guildId === '1372312806107512894' ? 'Xbox' : 'PlayStation';
 
-  const updateEmbedStatus = (statusText, color, extra = '') => {
-    const embed = EmbedBuilder.from(interaction.message.embeds[0]);
-    embed.setColor(color).addFields(
+const updateEmbedStatus = (statusText, color, extra = '') => {
+  const embed = EmbedBuilder.from(interaction.message.embeds[0]);
+  const shiftId = embed.footer?.text?.replace('Shift ID: ', '') || 'Unknown';
+
+  embed
+    .setColor(color)
+    .spliceFields(2, 10)
+    .addFields(
       { name: "Status", value: statusText, inline: false },
       ...(extra ? [{ name: "Info", value: extra, inline: false }] : [])
-    );
-    return embed;
-  };
+    )
+    .setFooter({ text: `Shift ID: ${shiftId}` });
+
+  return embed;
+};
 
   if (interaction.customId.startsWith('shift_start_')) {
     if (activeShifts.has(userId)) {
@@ -87,14 +94,14 @@ if (interaction.isButton()) {
       guildId: interaction.guildId,
     });
 
-    const embed = EmbedBuilder.from(interaction.message.embeds[0])
-      .setColor(0x2B2D31)
-      .spliceFields(2, 10) // remove old shift info if any
-      .addFields(
-        { name: "Status", value: "Shift Started", inline: false },
-        { name: "Started", value: `<t:${Math.floor(now / 1000)}:T>`, inline: false },
-        { name: "Shift ID", value: `\`${shiftId}\``, inline: false }
-      );
+const embed = EmbedBuilder.from(interaction.message.embeds[0])
+  .setColor(0x2B2D31)
+  .spliceFields(2, 10) // remove any old status/info fields
+  .addFields(
+    { name: "Status", value: "✅ Shift Started", inline: false },
+    { name: "Started", value: `<t:${Math.floor(now / 1000)}:T>`, inline: false }
+  )
+  .setFooter({ text: `Shift ID: ${shiftId}` });
 
     return interaction.update({ embeds: [embed], components: interaction.message.components });
   }
@@ -149,8 +156,8 @@ if (interaction.isButton()) {
       .addFields(
         { name: "Status", value: "Shift Ended", inline: false },
         { name: "Total Time", value: `${totalTime} seconds`, inline: false },
-        { name: "Shift ID", value: `\`${shift.shiftId}\``, inline: false }
       );
+      .setFooter({ text: `Shift ID: ${shiftId}` });
 
     return interaction.update({ embeds: [embed], components: interaction.message.components });
   }
