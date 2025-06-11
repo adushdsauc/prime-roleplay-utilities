@@ -22,6 +22,11 @@ const createSecureInvite = require("./utils/createSecureInvite");
 const { startApplication } = require("./applicationSessionHandler"); // place at top of index.js
 const activeShifts = new Map();
 
+const SHIFT_LOG_CHANNELS = {
+  '1372312806107512894': '1376607799622238469', // Xbox server → Xbox log
+  '1369495333574545559': '1376607873945174119', // PS server → PS log
+};
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -74,58 +79,111 @@ const updateEmbedStatus = (statusText, color, extra = '') => {
 
   return embed;
 };
+  
+const sendShiftLog = async (interaction, embedContent) => {
+  const logChannelId = SHIFT_LOG_CHANNELS[interaction.guildId];
+  if (!logChannelId) return;
 
-  if (interaction.customId.startsWith('shift_start_')) {
-    if (activeShifts.has(userId)) {
-      return; // no error shown, user already started
-    }
+  const logChannel = interaction.client.channels.cache.get(logChannelId);
+  if (!logChannel) return;
 
-    const department = interaction.customId.split('shift_start_')[1];
-    const shiftId = uuidv4();
-    const now = Date.now();
+  try {
+    await logChannel.send({ embeds: [embedContent] });
+  } catch (err) {
+    console.error('❌ Failed to send shift log:', err);
+  }
+};
 
-    activeShifts.set(userId, {
-      shiftId,
-      department,
-      startedAt: now,
-      lastResumedAt: now,
-      accumulatedTime: 0,
-      guildId: interaction.guildId,
-    });
-
-const embed = EmbedBuilder.from(interaction.message.embeds[0])
-  .setColor(0x2B2D31)
-  .spliceFields(2, 10) // remove any old status/info fields
-  .addFields(
-    { name: "Status", value: "✅ Shift Started", inline: false },
-    { name: "Started", value: `<t:${Math.floor(now / 1000)}:T>`, inline: false }
-  )
-  .setFooter({ text: `Shift ID: ${shiftId}` });
-
-    return interaction.update({ embeds: [embed], components: interaction.message.components });
+if (interaction.customId.startsWith('shift_start_')) {
+  if (activeShifts.has(userId)) {
+    return; // no error shown, user already started
   }
 
-  if (interaction.customId === 'shift_break') {
-    const shift = activeShifts.get(userId);
-    if (!shift || shift.onBreak) return;
+  const department = interaction.customId.split('shift_start_')[1];
+  const shiftId = uuidv4();
+  const now = Date.now();
 
-    shift.accumulatedTime += Date.now() - shift.lastResumedAt;
-    shift.onBreak = true;
+  activeShifts.set(userId, {
+    shiftId,
+    department,
+    startedAt: now,
+    lastResumedAt: now,
+    accumulatedTime: 0,
+    guildId: interaction.guildId,
+  });
 
-    const embed = updateEmbedStatus("Break Started", 0x2B2D31, `Break started <t:${Math.floor(Date.now() / 1000)}:T>`);
-    return interaction.update({ embeds: [embed], components: interaction.message.components });
-  }
+  const embed = EmbedBuilder.from(interaction.message.embeds[0])
+    .setColor(0x2B2D31)
+    .spliceFields(2, 10)
+    .addFields(
+      { name: "Status", value: "Shift Started", inline: false },
+      { name: "Started", value: `<t:${Math.floor(now / 1000)}:T>`, inline: false }
+    )
+    .setFooter({ text: `Shift ID: ${shiftId}` });
 
-  if (interaction.customId === 'shift_endbreak') {
-    const shift = activeShifts.get(userId);
-    if (!shift || !shift.onBreak) return;
+  await interaction.update({ embeds: [embed], components: interaction.message.components });
 
-    shift.onBreak = false;
-    shift.lastResumedAt = Date.now();
+  const logEmbed = new EmbedBuilder()
+    .setColor(0x2B2D31)
+    .setTitle(`Shift Started`)
+    .addFields(
+      { name: "User", value: `<@${userId}>`, inline: true },
+      { name: "Department", value: department, inline: true },
+      { name: "Started At", value: `<t:${Math.floor(now / 1000)}:f>`, inline: false },
+    )
+    .setFooter({ text: `Shift ID: ${shiftId}` });
 
-    const embed = updateEmbedStatus("Break Ended", 0x2B2D31, `Back on duty <t:${Math.floor(Date.now() / 1000)}:T>`);
-    return interaction.update({ embeds: [embed], components: interaction.message.components });
-  }
+  await sendShiftLog(interaction, logEmbed);
+}
+
+if (interaction.customId === 'shift_break') {
+  const shift = activeShifts.get(userId);
+  if (!shift || shift.onBreak) return;
+
+  shift.accumulatedTime += Date.now() - shift.lastResumedAt;
+  shift.onBreak = true;
+
+  const now = Date.now();
+  const embed = updateEmbedStatus("Break Started", 0x2B2D31, `Break started <t:${Math.floor(now / 1000)}:T>`);
+  await interaction.update({ embeds: [embed], components: interaction.message.components });
+
+  const logEmbed = new EmbedBuilder()
+    .setColor(0x2B2D31)
+    .setTitle(`Break Started`)
+    .addFields(
+      { name: "User", value: `<@${userId}>`, inline: true },
+      { name: "Department", value: shift.department, inline: true },
+      { name: "Break Started At", value: `<t:${Math.floor(now / 1000)}:f>`, inline: false },
+    )
+    .setFooter({ text: `Shift ID: ${shift.shiftId}` });
+
+  await sendShiftLog(interaction, logEmbed);
+}
+
+
+if (interaction.customId === 'shift_endbreak') {
+  const shift = activeShifts.get(userId);
+  if (!shift || !shift.onBreak) return;
+
+  shift.onBreak = false;
+  shift.lastResumedAt = Date.now();
+
+  const now = Date.now();
+  const embed = updateEmbedStatus("Break Ended", 0x2B2D31, `Back on duty <t:${Math.floor(now / 1000)}:T>`);
+  await interaction.update({ embeds: [embed], components: interaction.message.components });
+
+  const logEmbed = new EmbedBuilder()
+    .setColor(0x2B2D31)
+    .setTitle(`Break Ended`)
+    .addFields(
+      { name: "User", value: `<@${userId}>`, inline: true },
+      { name: "Department", value: shift.department, inline: true },
+      { name: "Returned At", value: `<t:${Math.floor(now / 1000)}:f>`, inline: false },
+    )
+    .setFooter({ text: `Shift ID: ${shift.shiftId}` });
+
+  await sendShiftLog(interaction, logEmbed);
+}
 
 if (interaction.customId === 'shift_end') {
   const shift = activeShifts.get(userId);
@@ -151,6 +209,7 @@ if (interaction.customId === 'shift_end') {
 
   activeShifts.delete(userId);
 
+  const now = Date.now();
   const embed = EmbedBuilder.from(interaction.message.embeds[0])
     .setColor(0x2B2D31)
     .spliceFields(2, 10)
@@ -160,7 +219,20 @@ if (interaction.customId === 'shift_end') {
     )
     .setFooter({ text: `Shift ID: ${shiftId}` });
 
-  return interaction.update({ embeds: [embed], components: interaction.message.components });
+  await interaction.update({ embeds: [embed], components: interaction.message.components });
+
+  const logEmbed = new EmbedBuilder()
+    .setColor(0x2B2D31)
+    .setTitle(`Shift Ended`)
+    .addFields(
+      { name: "User", value: `<@${userId}>`, inline: true },
+      { name: "Department", value: shift.department, inline: true },
+      { name: "Total Time", value: `${totalTime} seconds`, inline: false },
+      { name: "Ended At", value: `<t:${Math.floor(now / 1000)}:f>`, inline: false },
+    )
+    .setFooter({ text: `Shift ID: ${shiftId}` });
+
+  await sendShiftLog(interaction, logEmbed);
 }
 }  
     // Updated to use embeds for all bot messages, including DMs
