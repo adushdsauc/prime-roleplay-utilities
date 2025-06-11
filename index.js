@@ -156,7 +156,7 @@ const embed = EmbedBuilder.from(interaction.message.embeds[0])
       .addFields(
         { name: "Status", value: "Shift Ended", inline: false },
         { name: "Total Time", value: `${totalTime} seconds`, inline: false },
-      );
+      )
       .setFooter({ text: `Shift ID: ${shiftId}` });
 
     return interaction.update({ embeds: [embed], components: interaction.message.components });
