@@ -55,8 +55,6 @@ client.on("interactionCreate", async (interaction) => {
 const ShiftLog = require('./models/ShiftLog'); // Ensure you import your model
 const { v4: uuidv4 } = require('uuid');
 
-let activeShifts = new Map();
-
 if (interaction.isButton()) {
   const userId = interaction.user.id;
 
