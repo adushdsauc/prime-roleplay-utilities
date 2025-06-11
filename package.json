@@ -19,7 +19,8 @@
     "express-session": "^1.17.3",
     "google-spreadsheet": "^4.1.4",
     "luxon": "^3.6.1",
-    "mongoose": "^8.15.0"
+    "mongoose": "^8.15.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
