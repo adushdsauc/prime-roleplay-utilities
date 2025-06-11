@@ -20,6 +20,7 @@ const Invite = require("./models/Invite");
 const LOG_CHANNEL_ID = "1375641960651689984"; 
 const createSecureInvite = require("./utils/createSecureInvite");
 const { startApplication } = require("./applicationSessionHandler"); // place at top of index.js
+const activeShifts = new Map();
 
 const client = new Client({
   intents: [
