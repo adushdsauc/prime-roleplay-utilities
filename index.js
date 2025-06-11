@@ -68,7 +68,6 @@ const updateEmbedStatus = (statusText, color, extra = '') => {
     .setColor(color)
     .spliceFields(2, 10)
     .addFields(
-      { name: "Status", value: statusText, inline: false },
       ...(extra ? [{ name: "Info", value: extra, inline: false }] : [])
     )
     .setFooter({ text: `Shift ID: ${shiftId}` });
@@ -150,16 +149,17 @@ const embed = EmbedBuilder.from(interaction.message.embeds[0])
 
     activeShifts.delete(userId);
 
-    const embed = EmbedBuilder.from(interaction.message.embeds[0])
-      .setColor(0x2B2D31)
-      .spliceFields(2, 10)
-      .addFields(
-        { name: "Status", value: "Shift Ended", inline: false },
-        { name: "Total Time", value: `${totalTime} seconds`, inline: false },
-      )
-      .setFooter({ text: `Shift ID: ${shiftId}` });
+const embed = EmbedBuilder.from(interaction.message.embeds[0])
+  .setColor(0x2B2D31)
+  .spliceFields(2, 10)
+  .addFields(
+    { name: "Status", value: "Shift Ended", inline: false },
+    { name: "Total Time", value: `${totalTime} seconds`, inline: false }
+  )
+  .setFooter({ text: `Shift ID: ${shiftId}` });
 
-    return interaction.update({ embeds: [embed], components: interaction.message.components });
+return interaction.update({ embeds: [embed], components: interaction.message.components });
+
   }
 }
     
