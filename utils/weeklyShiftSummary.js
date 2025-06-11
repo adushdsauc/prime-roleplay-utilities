@@ -39,9 +39,9 @@ const buildPaginatedEmbeds = (department, entries) => {
   let count = 0;
   for (const [index, entry] of entries.entries()) {
     currentPage.addFields(
-      { name: "User", value: `<@${entry.discordId}>`, inline: true },
-      { name: "Time", value: entry.totalTime, inline: true },
-      { name: "Shifts", value: `${entry.shiftCount}`, inline: true }
+      { name: 'User', value: `<@${entry.discordId}>`, inline: true },
+      { name: 'Time', value: entry.totalTime, inline: true },
+      { name: 'Shifts', value: `${entry.shiftCount}`, inline: true }
     );
 
     count += 3;
@@ -99,6 +99,13 @@ const summarizeShifts = async (client) => {
       for (const embed of embeds) {
         await channel.send({ embeds: [embed] });
       }
+
+      // ✅ Delete the logs for this department and platform after sending
+      await ShiftLog.deleteMany({
+        platform,
+        department,
+        startedAt: { $gte: lastSunday }
+      });
     }
   }
 };
