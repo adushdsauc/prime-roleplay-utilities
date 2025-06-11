@@ -127,40 +127,40 @@ const embed = EmbedBuilder.from(interaction.message.embeds[0])
     return interaction.update({ embeds: [embed], components: interaction.message.components });
   }
 
-  if (interaction.customId === 'shift_end') {
-    const shift = activeShifts.get(userId);
-    if (!shift) return;
+if (interaction.customId === 'shift_end') {
+  const shift = activeShifts.get(userId);
+  if (!shift) return;
 
-    if (!shift.onBreak) {
-      shift.accumulatedTime += Date.now() - shift.lastResumedAt;
-    }
-
-    const totalTime = Math.floor(shift.accumulatedTime / 1000);
-    await ShiftLog.create({
-      discordId: userId,
-      guildId: shift.guildId,
-      platform,
-      department: shift.department,
-      shiftId: shift.shiftId,
-      startedAt: new Date(shift.startedAt),
-      endedAt: new Date(),
-      totalTime,
-    });
-
-    activeShifts.delete(userId);
-
-const embed = EmbedBuilder.from(interaction.message.embeds[0])
-  .setColor(0x2B2D31)
-  .spliceFields(2, 10)
-  .addFields(
-    { name: "Status", value: "Shift Ended", inline: false },
-    { name: "Total Time", value: `${totalTime} seconds`, inline: false }
-  )
-  .setFooter({ text: `Shift ID: ${shiftId}` });
-
-return interaction.update({ embeds: [embed], components: interaction.message.components });
-
+  if (!shift.onBreak) {
+    shift.accumulatedTime += Date.now() - shift.lastResumedAt;
   }
+
+  const totalTime = Math.floor(shift.accumulatedTime / 1000);
+  const shiftId = shift.shiftId || interaction.message.embeds[0]?.footer?.text?.replace('Shift ID: ', '') || uuidv4();
+
+  await ShiftLog.create({
+    discordId: userId,
+    guildId: shift.guildId,
+    platform,
+    department: shift.department,
+    shiftId,
+    startedAt: new Date(shift.startedAt),
+    endedAt: new Date(),
+    totalTime,
+  });
+
+  activeShifts.delete(userId);
+
+  const embed = EmbedBuilder.from(interaction.message.embeds[0])
+    .setColor(0x2B2D31)
+    .spliceFields(2, 10)
+    .addFields(
+      { name: "Status", value: "Shift Ended", inline: false },
+      { name: "Total Time", value: `${totalTime} seconds`, inline: false }
+    )
+    .setFooter({ text: `Shift ID: ${shiftId}` });
+
+  return interaction.update({ embeds: [embed], components: interaction.message.components });
 }
     
     // Updated to use embeds for all bot messages, including DMs
