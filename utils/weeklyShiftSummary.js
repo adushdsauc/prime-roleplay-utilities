@@ -31,21 +31,21 @@ const getLastSunday = () => {
 
 const buildPaginatedEmbeds = (department, entries) => {
   const pages = [];
-  const maxFieldsPerPage = 25;
+  const maxFieldsPerPage = 9; // 3 fields per user row
   let currentPage = new EmbedBuilder()
     .setTitle(`${department} Shift Summary`)
     .setColor(0x2B2D31);
 
   let count = 0;
   for (const [index, entry] of entries.entries()) {
-    currentPage.addFields({
-      name: `${entry.userTag}`,
-      value: `**Total Time:** ${entry.totalTime}\n**Total Shifts:** ${entry.shiftCount}`,
-      inline: false
-    });
+    currentPage.addFields(
+      { name: "User", value: `<@${entry.discordId}>`, inline: true },
+      { name: "Time", value: entry.totalTime, inline: true },
+      { name: "Shifts", value: `${entry.shiftCount}`, inline: true }
+    );
 
-    count++;
-    if (count === maxFieldsPerPage || index === entries.length - 1) {
+    count += 3;
+    if (count >= maxFieldsPerPage || index === entries.length - 1) {
       pages.push(currentPage);
       currentPage = new EmbedBuilder()
         .setTitle(`${department} Shift Summary (cont.)`)
@@ -85,6 +85,7 @@ const summarizeShifts = async (client) => {
         Array.from(summaryMap.entries()).map(async ([discordId, data]) => {
           const user = await client.users.fetch(discordId).catch(() => null);
           return {
+            discordId,
             userTag: user ? user.tag : `Unknown (${discordId})`,
             totalTime: formatDuration(data.totalTime),
             shiftCount: data.shiftCount
