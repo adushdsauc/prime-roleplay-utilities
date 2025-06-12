@@ -551,7 +551,6 @@ try {
       });
     }
   }
-}
     if (interaction.isStringSelectMenu() && interaction.customId.startsWith("platform_select_")) {
       await interaction.deferUpdate();
       const department = interaction.customId.replace("platform_select_", "");
