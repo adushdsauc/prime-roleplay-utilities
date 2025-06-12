@@ -520,37 +520,38 @@ if (interaction.isStringSelectMenu() && interaction.customId === "application_ty
       ])
   );
 
-try {
-  await interaction.user.send({
-    content: `You selected the **${selected.toUpperCase()}** application.\nPlease choose your platform to continue:`,
-    components: [platformRow]
-  });
-
-  // ✅ Reply to the interaction to confirm action
-  if (!interaction.replied && !interaction.deferred) {
-    await interaction.reply({
-      content: `✅ Check your DMs to continue the application.`,
-      ephemeral: true
+  try {
+    await interaction.user.send({
+      content: `You selected the **${selected.toUpperCase()}** application.\nPlease choose your platform to continue:`,
+      components: [platformRow]
     });
-  }
-} catch (err) {
-  if (err.code === 50007) {
-    // ✅ Reply only if no previous reply
+
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
-        content: `❌ I couldn't DM you. Please enable DMs and try again.`,
+        content: `✅ Check your DMs to continue the application.`,
         ephemeral: true
       });
     }
-  } else {
-    console.error("❌ Unexpected DM error:", err);
-    if (!interaction.replied && !interaction.deferred) {
-      await interaction.reply({
-        content: `❌ An unexpected error occurred.`,
-        ephemeral: true
-      });
+  } catch (err) {
+    if (err.code === 50007) {
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({
+          content: `❌ I couldn't DM you. Please enable DMs and try again.`,
+          ephemeral: true
+        });
+      }
+    } else {
+      console.error("❌ Unexpected DM error:", err);
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({
+          content: `❌ An unexpected error occurred.`,
+          ephemeral: true
+        });
+      }
     }
   }
+}
+
     if (interaction.isStringSelectMenu() && interaction.customId.startsWith("platform_select_")) {
       await interaction.deferUpdate();
       const department = interaction.customId.replace("platform_select_", "");
