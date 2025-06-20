@@ -1,42 +1,45 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const ModCase = require('../models/ModCase');
 const logModeration = require('../utils/modLog');
 const { v4: uuidv4 } = require('uuid');
-const ModCase = require('../models/ModCase');
 const createCaseEmbed = require('../utils/createCaseEmbed');
+
+const MUTE_ROLE_ID = process.env.MUTE_ROLE_ID;
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('unban')
-    .setDescription('Unban a user by ID')
-    .addStringOption(opt => opt.setName('id').setDescription('User ID').setRequired(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+    .setName('unmute')
+    .setDescription('Remove mute from a user')
+    .addUserOption(opt => opt.setName('user').setDescription('Target user').setRequired(true))
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
   async execute(interaction) {
-    const id = interaction.options.getString('id');
-    const reason = 'Unban';
+    if (!MUTE_ROLE_ID) return interaction.reply({ content: 'Mute role not configured.', ephemeral: true });
+    const member = interaction.options.getMember('user');
+    if (!member) return interaction.reply({ content: '❌ Member not found.', ephemeral: true });
     const caseId = uuidv4().split('-')[0];
-    await interaction.guild.members.unban(id).catch(() => {});
+
+    await member.roles.remove(MUTE_ROLE_ID).catch(() => {});
 
     await ModCase.create({
       guildId: interaction.guildId,
-      userId: id,
+      userId: member.id,
       moderatorId: interaction.user.id,
-      action: 'Unban',
-      reason,
+      action: 'Unmute',
       caseId
     });
 
     const embed = createCaseEmbed({
       guild: interaction.guild,
       moderator: interaction.user,
-      action: 'Unban',
-      reason,
+      action: 'Unmute',
+      reason: 'Unmute',
       caseId,
       color: 0x1abc9c
     });
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
-    const target = await interaction.client.users.fetch(id).catch(() => null);
-    if (target) await target.send({ embeds: [embed] }).catch(() => {});
+    await member.user.send({ embeds: [embed] }).catch(() => {});
     await logModeration(interaction.guild, embed);
   }
+};
