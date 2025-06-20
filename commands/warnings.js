@@ -2,6 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('disc
 const Warning = require('../models/Warning');
 const ModCase = require('../models/ModCase');
 
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('warnings')
@@ -23,6 +24,7 @@ module.exports = {
       .setTitle(`Moderation History for ${user.tag}`)
       .setColor(0x7289da)
       .setDescription(all.map(c => `**${c.action}** - ${c.reason || 'No reason'} (Case ${c.caseId})`).join('\n'))
+
       .setTimestamp();
 
     return interaction.reply({ embeds: [embed], ephemeral: true });

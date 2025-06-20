@@ -1,9 +1,11 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+
 const ModCase = require('../models/ModCase');
 const logModeration = require('../utils/modLog');
 const parseDuration = require('../utils/parseDuration');
 const { v4: uuidv4 } = require('uuid');
 const createCaseEmbed = require('../utils/createCaseEmbed');
+
 
 const MUTE_ROLE_ID = process.env.MUTE_ROLE_ID;
 
@@ -49,6 +51,7 @@ module.exports = {
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
     await member.user.send({ embeds: [embed] }).catch(() => {});
+
     await logModeration(interaction.guild, embed);
   }
 };

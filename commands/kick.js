@@ -4,6 +4,7 @@ const logModeration = require('../utils/modLog');
 const { v4: uuidv4 } = require('uuid');
 const createCaseEmbed = require('../utils/createCaseEmbed');
 
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('kick')
@@ -40,6 +41,7 @@ module.exports = {
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
     await member.user.send({ embeds: [embed] }).catch(() => {});
+
     await logModeration(interaction.guild, embed);
   }
 };

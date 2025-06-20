@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+
 const { v4: uuidv4 } = require('uuid');
 const Warning = require('../models/Warning');
 const ModCase = require('../models/ModCase');
@@ -50,6 +51,7 @@ module.exports = {
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
     await user.send({ embeds: [embed] }).catch(() => {});
+
     await logModeration(interaction.guild, embed);
   }
 };
