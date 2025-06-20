@@ -1,8 +1,11 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+
 const ModCase = require('../models/ModCase');
 const logModeration = require('../utils/modLog');
 const parseDuration = require('../utils/parseDuration');
 const { v4: uuidv4 } = require('uuid');
+const createCaseEmbed = require('../utils/createCaseEmbed');
+
 
 const MUTE_ROLE_ID = process.env.MUTE_ROLE_ID;
 
@@ -37,19 +40,18 @@ module.exports = {
       caseId
     });
 
-    const embed = new EmbedBuilder()
-      .setTitle('🔇 User Muted')
-      .addFields(
-        { name: 'User', value: `<@${member.id}>`, inline: true },
-        ...(durationStr ? [{ name: 'Duration', value: durationStr, inline: true }] : []),
-        { name: 'Moderator', value: `<@${interaction.user.id}>`, inline: true },
-        { name: 'Reason', value: reason, inline: false },
-        { name: 'Case ID', value: caseId, inline: true }
-      )
-      .setColor(0x95a5a6)
-      .setTimestamp();
+    const embed = createCaseEmbed({
+      guild: interaction.guild,
+      moderator: interaction.user,
+      action: durationStr ? `Mute for ${durationStr}` : 'Mute',
+      reason,
+      caseId,
+      color: 0x95a5a6
+    });
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
+    await member.user.send({ embeds: [embed] }).catch(() => {});
+
     await logModeration(interaction.guild, embed);
   }
 };

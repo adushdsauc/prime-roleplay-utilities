@@ -1,7 +1,8 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const logModeration = require('../utils/modLog');
 const { v4: uuidv4 } = require('uuid');
 const ModCase = require('../models/ModCase');
+const createCaseEmbed = require('../utils/createCaseEmbed');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -25,17 +26,18 @@ module.exports = {
       caseId
     });
 
-    const embed = new EmbedBuilder()
-      .setTitle('User Unbanned')
-      .addFields(
-        { name: 'User ID', value: id, inline: true },
-        { name: 'Moderator', value: `<@${interaction.user.id}>`, inline: true },
-        { name: 'Case ID', value: caseId, inline: true }
-      )
-      .setColor(0x1abc9c)
-      .setTimestamp();
+    const embed = createCaseEmbed({
+      guild: interaction.guild,
+      moderator: interaction.user,
+      action: 'Unban',
+      reason,
+      caseId,
+      color: 0x1abc9c
+    });
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
+    const target = await interaction.client.users.fetch(id).catch(() => null);
+    if (target) await target.send({ embeds: [embed] }).catch(() => {});
     await logModeration(interaction.guild, embed);
   }
 };

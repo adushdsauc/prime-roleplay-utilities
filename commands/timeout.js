@@ -1,8 +1,9 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const ModCase = require('../models/ModCase');
 const logModeration = require('../utils/modLog');
 const { v4: uuidv4 } = require('uuid');
 const parseDuration = require('../utils/parseDuration');
+const createCaseEmbed = require('../utils/createCaseEmbed');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -34,19 +35,17 @@ module.exports = {
       caseId
     });
 
-    const embed = new EmbedBuilder()
-      .setTitle('⏱️ User Timed Out')
-      .addFields(
-        { name: 'User', value: `<@${member.id}>`, inline: true },
-        { name: 'Duration', value: durationStr, inline: true },
-        { name: 'Moderator', value: `<@${interaction.user.id}>`, inline: true },
-        { name: 'Reason', value: reason, inline: false },
-        { name: 'Case ID', value: caseId, inline: true }
-      )
-      .setColor(0xf1c40f)
-      .setTimestamp();
+    const embed = createCaseEmbed({
+      guild: interaction.guild,
+      moderator: interaction.user,
+      action: `Timeout for ${durationStr}`,
+      reason,
+      caseId,
+      color: 0xf1c40f
+    });
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
+    await member.user.send({ embeds: [embed] }).catch(() => {});
     await logModeration(interaction.guild, embed);
   }
 };

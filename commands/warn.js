@@ -1,8 +1,10 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+
 const { v4: uuidv4 } = require('uuid');
 const Warning = require('../models/Warning');
 const ModCase = require('../models/ModCase');
 const logModeration = require('../utils/modLog');
+const createCaseEmbed = require('../utils/createCaseEmbed');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -38,18 +40,18 @@ module.exports = {
       caseId
     });
 
-    const embed = new EmbedBuilder()
-      .setTitle('⚠️ User Warned')
-      .setColor(0xe67e22)
-      .addFields(
-        { name: 'User', value: `<@${user.id}>`, inline: true },
-        { name: 'Moderator', value: `<@${interaction.user.id}>`, inline: true },
-        { name: 'Reason', value: reason, inline: false },
-        { name: 'Case ID', value: caseId, inline: true }
-      )
-      .setTimestamp();
+    const embed = createCaseEmbed({
+      guild: interaction.guild,
+      moderator: interaction.user,
+      action: 'Warn',
+      reason,
+      caseId,
+      color: 0xe67e22
+    });
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
+    await user.send({ embeds: [embed] }).catch(() => {});
+
     await logModeration(interaction.guild, embed);
   }
 };

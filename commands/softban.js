@@ -1,7 +1,10 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const ModCase = require('../models/ModCase');
 const logModeration = require('../utils/modLog');
 const { v4: uuidv4 } = require('uuid');
+const createCaseEmbed = require('../utils/createCaseEmbed');
+
+
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -28,18 +31,18 @@ module.exports = {
       caseId
     });
 
-    const embed = new EmbedBuilder()
-      .setTitle('User Softbanned')
-      .addFields(
-        { name: 'User', value: `<@${user.id}>`, inline: true },
-        { name: 'Moderator', value: `<@${interaction.user.id}>`, inline: true },
-        { name: 'Reason', value: reason, inline: false },
-        { name: 'Case ID', value: caseId, inline: true }
-      )
-      .setColor(0xe67e22)
-      .setTimestamp();
+    const embed = createCaseEmbed({
+      guild: interaction.guild,
+      moderator: interaction.user,
+      action: 'Softban',
+      reason,
+      caseId,
+      color: 0xe67e22
+    });
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
+    await user.send({ embeds: [embed] }).catch(() => {});
+
     await logModeration(interaction.guild, embed);
   }
 };

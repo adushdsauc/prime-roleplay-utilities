@@ -1,5 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const Warning = require('../models/Warning');
+const ModCase = require('../models/ModCase');
+
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -10,16 +12,19 @@ module.exports = {
 
   async execute(interaction) {
     const user = interaction.options.getUser('user');
-    const warns = await Warning.find({ guildId: interaction.guildId, userId: user.id }).lean();
-
-    if (!warns.length) {
-      return interaction.reply({ content: '✅ No warnings found for this user.', ephemeral: true });
+    const warnings = await Warning.find({ guildId: interaction.guildId, userId: user.id }).lean();
+    const cases = await ModCase.find({ guildId: interaction.guildId, userId: user.id }).lean();
+    const all = [...warnings.map(w => ({ action: 'Warn', reason: w.reason, caseId: w.caseId, timestamp: w.timestamp })), ...cases];
+    if (!all.length) {
+      return interaction.reply({ content: '✅ No moderation history.', ephemeral: true });
     }
+    all.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     const embed = new EmbedBuilder()
-      .setTitle(`Warnings for ${user.tag}`)
-      .setColor(0xe67e22)
-      .setDescription(warns.map(w => `**${w.caseId}** - ${w.reason}`).join('\n'))
+      .setTitle(`Moderation History for ${user.tag}`)
+      .setColor(0x7289da)
+      .setDescription(all.map(c => `**${c.action}** - ${c.reason || 'No reason'} (Case ${c.caseId})`).join('\n'))
+
       .setTimestamp();
 
     return interaction.reply({ embeds: [embed], ephemeral: true });
