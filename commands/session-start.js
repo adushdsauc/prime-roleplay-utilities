@@ -1,4 +1,3 @@
-// commands/session-start.js
 const {
   SlashCommandBuilder,
   EmbedBuilder,
@@ -8,9 +7,18 @@ const {
 } = require("discord.js");
 const { DateTime } = require("luxon");
 
+// Allowed roles that can run the command
 const ALLOWED_ROLE_IDS = ["1370176650234302484", "1372312806233215070"];
+
+// Guild IDs
 const XBOX_GUILD_ID = "1372312806107512894";
 const PLAYSTATION_GUILD_ID = "1369495333574545559";
+
+// Session ping role IDs per guild
+const SESSION_PING_ROLE_IDS = {
+  [XBOX_GUILD_ID]: "1372312806120231032",        
+  [PLAYSTATION_GUILD_ID]: "1370181571189145672"   
+};
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -53,9 +61,11 @@ module.exports = {
     }
 
     const unix = Math.floor(dt.toSeconds());
-
     const guildId = interaction.guildId;
+
     const label = guildId === PLAYSTATION_GUILD_ID ? "**PSN:**" : "**Xbox Gamertag:**";
+    const pingRoleId = SESSION_PING_ROLE_IDS[guildId];
+    const pingContent = pingRoleId ? `<@&${pingRoleId}>` : null;
 
     const embed = new EmbedBuilder()
       .setColor(type === "Primary" ? 0x0099ff : 0xffa500)
@@ -78,13 +88,13 @@ module.exports = {
             `> **Start Time:** <t:${unix}:F> (<t:${unix}:R>)\n> • **Session Type:** ${type} | Scenario Based\n> • **Area of Play:** *To Be Announced*\n> • [Prime Roleplay Booklet](https://example.com) • [Map](https://example.com) • [Timezones](https://example.com)`,
         },
         {
-          name: "✅ Attending", value: "–", inline: true
+          name: "✅ Attending (0/24)", value: "–", inline: true
         },
         {
-          name: "❌ Not Attending", value: "–", inline: true
+          name: "❌ Not Attending (0)", value: "–", inline: true
         },
         {
-          name: "🕰️ Late", value: "–", inline: true
+          name: "🕰️ Late (0)", value: "–", inline: true
         }
       )
       .setFooter({ text: "Host: " + interaction.user.tag + " | Respond with the buttons below." });
@@ -95,7 +105,12 @@ module.exports = {
       new ButtonBuilder().setCustomId("late").setLabel("🕰️ Late").setStyle(ButtonStyle.Secondary)
     );
 
-    const message = await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
+    const message = await interaction.reply({
+      content: pingContent,
+      embeds: [embed],
+      components: [row],
+      fetchReply: true
+    });
 
     const attendance = { attending: [], cant: [], late: [] };
 
@@ -112,9 +127,21 @@ module.exports = {
       attendance[i.customId].push(mention);
 
       embed.spliceFields(3, 3,
-        { name: "✅ Attending", value: attendance.attending.join("\n") || "–", inline: true },
-        { name: "❌ Not Attending", value: attendance.cant.join("\n") || "–", inline: true },
-        { name: "🕰️ Late", value: attendance.late.join("\n") || "–", inline: true }
+        {
+          name: `✅ Attending (${attendance.attending.length}/24)`,
+          value: attendance.attending.join("\n") || "–",
+          inline: true
+        },
+        {
+          name: `❌ Not Attending (${attendance.cant.length})`,
+          value: attendance.cant.join("\n") || "–",
+          inline: true
+        },
+        {
+          name: `🕰️ Late (${attendance.late.length})`,
+          value: attendance.late.join("\n") || "–",
+          inline: true
+        }
       );
 
       await i.update({ embeds: [embed], components: [row] });
