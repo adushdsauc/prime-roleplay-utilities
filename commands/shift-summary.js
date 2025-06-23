@@ -11,7 +11,7 @@ module.exports = {
     await interaction.deferReply({ ephemeral: true });
     try {
       await summarizeShifts(interaction.client);
-      await interaction.editReply('✅ Shift summary generated.');
+      await interaction.editReply('Shifts Summarized..');
     } catch (err) {
       console.error('❌ Error summarizing shifts:', err);
       await interaction.editReply('❌ Failed to summarize shifts.');
