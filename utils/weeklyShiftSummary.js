@@ -20,14 +20,6 @@ const formatDuration = (seconds) => {
   return `${hrs}h ${min}m`;
 };
 
-const getLastSunday = () => {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day;
-  const lastSunday = new Date(now.setDate(diff));
-  lastSunday.setHours(0, 0, 0, 0);
-  return lastSunday;
-};
 
 const buildPaginatedEmbeds = (department, entries) => {
   const pages = [];
@@ -57,18 +49,18 @@ const buildPaginatedEmbeds = (department, entries) => {
 };
 
 const summarizeShifts = async (client) => {
-  const lastSunday = getLastSunday();
-
   for (const platformKey in PLATFORMS) {
     const { name: platform, channelId } = PLATFORMS[platformKey];
-    const channel = await client.channels.fetch(channelId);
+    let channel;
+    try {
+      channel = await client.channels.fetch(channelId);
+    } catch (err) {
+      console.error(`❌ Failed to fetch summary channel for ${platform}:`, err);
+      continue;
+    }
 
     for (const department of DEPARTMENTS) {
-      const logs = await ShiftLog.find({
-        platform,
-        department,
-        startedAt: { $gte: lastSunday }
-      });
+      const logs = await ShiftLog.find({ platform, department });
 
       const summaryMap = new Map();
 
@@ -101,11 +93,7 @@ const summarizeShifts = async (client) => {
       }
 
       // ✅ Delete the logs for this department and platform after sending
-      await ShiftLog.deleteMany({
-        platform,
-        department,
-        startedAt: { $gte: lastSunday }
-      });
+      await ShiftLog.deleteMany({ platform, department });
     }
   }
 };
