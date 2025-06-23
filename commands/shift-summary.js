@@ -12,6 +12,7 @@ module.exports = {
     try {
       await summarizeShifts(interaction.client);
       await interaction.editReply('✅ Shift summary generated.');
+
     } catch (err) {
       console.error('❌ Error summarizing shifts:', err);
       await interaction.editReply('❌ Failed to summarize shifts.');
