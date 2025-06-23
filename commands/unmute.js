@@ -10,13 +10,21 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('unmute')
     .setDescription('Remove mute from a user')
-    .addUserOption(opt => opt.setName('user').setDescription('Target user').setRequired(true))
+    .addUserOption(opt =>
+      opt.setName('user').setDescription('Target user').setRequired(true)
+    )
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
   async execute(interaction) {
-    if (!MUTE_ROLE_ID) return interaction.reply({ content: 'Mute role not configured.', ephemeral: true });
+    if (!MUTE_ROLE_ID) {
+      return interaction.reply({ content: 'Mute role not configured.', ephemeral: true });
+    }
+
     const member = interaction.options.getMember('user');
-    if (!member) return interaction.reply({ content: '❌ Member not found.', ephemeral: true });
+    if (!member) {
+      return interaction.reply({ content: '❌ Member not found.', ephemeral: true });
+    }
+
     const caseId = uuidv4().split('-')[0];
 
     await member.roles.remove(MUTE_ROLE_ID).catch(() => {});
@@ -42,4 +50,4 @@ module.exports = {
     await member.user.send({ embeds: [embed] }).catch(() => {});
     await logModeration(interaction.guild, embed);
   }
-};
+}; // ← This closing brace was missing
