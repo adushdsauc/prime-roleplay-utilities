@@ -39,6 +39,15 @@ const PRIORITY_STATUS_CHANNELS = {
   '1369495333574545559': process.env.PS_PRIORITY_STATUS_CHANNEL_ID,
 };
 
+const COOLDOWNS = {
+  '10-70': 15 * 60 * 1000,
+  '10-80': 30 * 60 * 1000,
+  'Hostage': 45 * 60 * 1000
+};
+
+const reminderTimers = new Map();
+
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -177,6 +186,20 @@ if (interaction.customId.startsWith('priority_accept_')) {
   const user = await interaction.client.users.fetch(request.requesterId).catch(() => null);
   if (user) {
     await user.send({ embeds: [dmEmbed], components: [dmRow] }).catch(() => {});
+
+    const reminder = setTimeout(async () => {
+      const req = await Priority.findOne({ requestId });
+      if (req && req.status === 'approved') {
+        await user.send('⏰ Reminder: your approved priority has not been started yet.').catch(() => {});
+        const chanId = PRIORITY_REQUEST_CHANNELS[req.guildId];
+        const ch = chanId ? await interaction.client.channels.fetch(chanId).catch(() => null) : null;
+        if (ch) {
+          await ch.send(`⏰ Priority ${requestId} approved for <@${req.requesterId}> has not been started.`).catch(() => {});
+        }
+      }
+    }, 5 * 60 * 1000);
+    reminderTimers.set(requestId, reminder);
+
   }
 }
 
@@ -197,6 +220,12 @@ if (interaction.customId.startsWith('priority_deny_')) {
   if (user) {
     await user.send('❌ Your priority request was denied.').catch(() => {});
   }
+  const timer = reminderTimers.get(requestId);
+  if (timer) {
+    clearTimeout(timer);
+    reminderTimers.delete(requestId);
+  }
+
 }
 
 if (interaction.customId.startsWith('priority_start_')) {
@@ -229,6 +258,12 @@ if (interaction.customId.startsWith('priority_start_')) {
   );
 
   await interaction.update({ components: [row] });
+  const timer = reminderTimers.get(requestId);
+  if (timer) {
+    clearTimeout(timer);
+    reminderTimers.delete(requestId);
+  }
+
 }
 
 if (interaction.customId.startsWith('priority_end_')) {
@@ -238,6 +273,8 @@ if (interaction.customId.startsWith('priority_end_')) {
 
   request.status = 'ended';
   request.endedAt = new Date();
+  request.cooldownEndsAt = new Date(request.endedAt.getTime() + (COOLDOWNS[request.type] || 0));
+
   await request.save();
 
   const statusChannelId = PRIORITY_STATUS_CHANNELS[request.guildId];
@@ -264,8 +301,35 @@ if (interaction.customId.startsWith('priority_cancel_')) {
 
   request.status = 'canceled';
   await request.save();
-
   await interaction.update({ components: [] });
+  const timer = reminderTimers.get(requestId);
+  if (timer) {
+    clearTimeout(timer);
+    reminderTimers.delete(requestId);
+  }
+}
+
+if (interaction.customId.startsWith('priority_withdraw_')) {
+  const requestId = interaction.customId.replace('priority_withdraw_', '');
+  const request = await Priority.findOne({ requestId });
+  if (!request || request.status !== 'pending') return;
+
+  request.status = 'canceled';
+  await request.save();
+
+  await interaction.update({ components: [] }).catch(() => {});
+
+  const chanId = PRIORITY_REQUEST_CHANNELS[request.guildId];
+  const ch = chanId ? await interaction.client.channels.fetch(chanId).catch(() => null) : null;
+  if (ch) {
+    await ch.send(`⚠️ Priority request ${requestId} by <@${request.requesterId}> was withdrawn.`).catch(() => {});
+  }
+  const timer = reminderTimers.get(requestId);
+  if (timer) {
+    clearTimeout(timer);
+    reminderTimers.delete(requestId);
+  }
+
 }
 if (interaction.customId === 'shift_break') {
   const shift = activeShifts.get(userId);
