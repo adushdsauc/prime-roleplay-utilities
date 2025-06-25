@@ -19,6 +19,7 @@ const prioritySchema = new mongoose.Schema({
   endedAt: Date
   ,
   cooldownEndsAt: Date
+
 });
 
 module.exports = mongoose.model('Priority', prioritySchema);

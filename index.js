@@ -47,6 +47,7 @@ const COOLDOWNS = {
 
 const reminderTimers = new Map();
 
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -198,6 +199,7 @@ if (interaction.customId.startsWith('priority_accept_')) {
       }
     }, 5 * 60 * 1000);
     reminderTimers.set(requestId, reminder);
+
   }
 }
 
@@ -223,6 +225,7 @@ if (interaction.customId.startsWith('priority_deny_')) {
     clearTimeout(timer);
     reminderTimers.delete(requestId);
   }
+
 }
 
 if (interaction.customId.startsWith('priority_start_')) {
@@ -260,6 +263,7 @@ if (interaction.customId.startsWith('priority_start_')) {
     clearTimeout(timer);
     reminderTimers.delete(requestId);
   }
+
 }
 
 if (interaction.customId.startsWith('priority_end_')) {
@@ -270,6 +274,7 @@ if (interaction.customId.startsWith('priority_end_')) {
   request.status = 'ended';
   request.endedAt = new Date();
   request.cooldownEndsAt = new Date(request.endedAt.getTime() + (COOLDOWNS[request.type] || 0));
+
   await request.save();
 
   const statusChannelId = PRIORITY_STATUS_CHANNELS[request.guildId];
@@ -324,6 +329,7 @@ if (interaction.customId.startsWith('priority_withdraw_')) {
     clearTimeout(timer);
     reminderTimers.delete(requestId);
   }
+
 }
 if (interaction.customId === 'shift_break') {
   const shift = activeShifts.get(userId);
