@@ -29,6 +29,24 @@ const SHIFT_LOG_CHANNELS = {
   '1369495333574545559': '1376607873945174119', // PS server → PS log
 };
 
+const PRIORITY_REQUEST_CHANNELS = {
+  '1372312806107512894': process.env.XBOX_PRIORITY_REQUEST_CHANNEL_ID,
+  '1369495333574545559': process.env.PS_PRIORITY_REQUEST_CHANNEL_ID,
+};
+
+const PRIORITY_STATUS_CHANNELS = {
+  '1372312806107512894': process.env.XBOX_PRIORITY_STATUS_CHANNEL_ID,
+  '1369495333574545559': process.env.PS_PRIORITY_STATUS_CHANNEL_ID,
+};
+
+const COOLDOWNS = {
+  '10-70': 15 * 60 * 1000,
+  '10-80': 30 * 60 * 1000,
+  'Hostage': 45 * 60 * 1000
+};
+
+const reminderTimers = new Map();
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -62,6 +80,7 @@ client.on("interactionCreate", async (interaction) => {
 const ShiftLog = require('./models/ShiftLog');
 const { v4: uuidv4 } = require('uuid');
 const { EmbedBuilder } = require('discord.js');
+const Priority = require('./models/Priority');
 
 if (interaction.isButton()) {
   const userId = interaction.user.id;
@@ -138,6 +157,174 @@ if (interaction.customId.startsWith('shift_start_')) {
   await sendShiftLog(interaction, logEmbed);
 }
 
+if (interaction.customId.startsWith('priority_accept_')) {
+  const requestId = interaction.customId.replace('priority_accept_', '');
+  const request = await Priority.findOne({ requestId });
+  if (!request || request.status !== 'pending') return;
+
+  request.status = 'approved';
+  request.approvedAt = new Date();
+  await request.save();
+
+  const embed = EmbedBuilder.from(interaction.message.embeds[0])
+    .setColor(0x2ecc71)
+    .addFields({ name: 'Status', value: `Approved by <@${interaction.user.id}>` });
+  await interaction.update({ embeds: [embed], components: [] });
+
+  const dmEmbed = new EmbedBuilder()
+    .setTitle('Priority Approved')
+    .setDescription('Use the buttons below to start your priority when ready.')
+    .setColor(0x2B2D31)
+    .setFooter({ text: `Request ID: ${requestId}` });
+
+  const dmRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`priority_start_${requestId}`).setLabel('Start Priority').setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(`priority_cancel_${requestId}`).setLabel('Cancel').setStyle(ButtonStyle.Danger)
+  );
+
+  const user = await interaction.client.users.fetch(request.requesterId).catch(() => null);
+  if (user) {
+    await user.send({ embeds: [dmEmbed], components: [dmRow] }).catch(() => {});
+
+    const reminder = setTimeout(async () => {
+      const req = await Priority.findOne({ requestId });
+      if (req && req.status === 'approved') {
+        await user.send('⏰ Reminder: your approved priority has not been started yet.').catch(() => {});
+        const chanId = PRIORITY_REQUEST_CHANNELS[req.guildId];
+        const ch = chanId ? await interaction.client.channels.fetch(chanId).catch(() => null) : null;
+        if (ch) {
+          await ch.send(`⏰ Priority ${requestId} approved for <@${req.requesterId}> has not been started.`).catch(() => {});
+        }
+      }
+    }, 5 * 60 * 1000);
+    reminderTimers.set(requestId, reminder);
+  }
+}
+
+if (interaction.customId.startsWith('priority_deny_')) {
+  const requestId = interaction.customId.replace('priority_deny_', '');
+  const request = await Priority.findOne({ requestId });
+  if (!request || request.status !== 'pending') return;
+
+  request.status = 'denied';
+  await request.save();
+
+  const embed = EmbedBuilder.from(interaction.message.embeds[0])
+    .setColor(0xff0000)
+    .addFields({ name: 'Status', value: `Denied by <@${interaction.user.id}>` });
+  await interaction.update({ embeds: [embed], components: [] });
+
+  const user = await interaction.client.users.fetch(request.requesterId).catch(() => null);
+  if (user) {
+    await user.send('❌ Your priority request was denied.').catch(() => {});
+  }
+  const timer = reminderTimers.get(requestId);
+  if (timer) {
+    clearTimeout(timer);
+    reminderTimers.delete(requestId);
+  }
+}
+
+if (interaction.customId.startsWith('priority_start_')) {
+  const requestId = interaction.customId.replace('priority_start_', '');
+  const request = await Priority.findOne({ requestId });
+  if (!request || request.status !== 'approved') return;
+
+  request.status = 'active';
+  request.startedAt = new Date();
+  await request.save();
+
+  const statusChannelId = PRIORITY_STATUS_CHANNELS[request.guildId];
+  const statusChannel = statusChannelId ? await interaction.client.channels.fetch(statusChannelId).catch(() => null) : null;
+  if (statusChannel) {
+    const embed = new EmbedBuilder()
+      .setTitle('Active Priority')
+      .setColor(0x2B2D31)
+      .addFields(
+        { name: 'Type', value: request.type, inline: true },
+        { name: 'Requester', value: `<@${request.requesterId}>`, inline: true },
+        { name: 'Started', value: `<t:${Math.floor(Date.now()/1000)}:t>`, inline: true },
+        { name: 'Participants', value: request.participants.length ? request.participants.join(', ') : 'None' }
+      )
+      .setFooter({ text: `Request ID: ${requestId}` });
+    await statusChannel.send({ embeds: [embed] });
+  }
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`priority_end_${requestId}`).setLabel('End Priority').setStyle(ButtonStyle.Danger)
+  );
+
+  await interaction.update({ components: [row] });
+  const timer = reminderTimers.get(requestId);
+  if (timer) {
+    clearTimeout(timer);
+    reminderTimers.delete(requestId);
+  }
+}
+
+if (interaction.customId.startsWith('priority_end_')) {
+  const requestId = interaction.customId.replace('priority_end_', '');
+  const request = await Priority.findOne({ requestId });
+  if (!request || request.status !== 'active') return;
+
+  request.status = 'ended';
+  request.endedAt = new Date();
+  request.cooldownEndsAt = new Date(request.endedAt.getTime() + (COOLDOWNS[request.type] || 0));
+  await request.save();
+
+  const statusChannelId = PRIORITY_STATUS_CHANNELS[request.guildId];
+  const statusChannel = statusChannelId ? await interaction.client.channels.fetch(statusChannelId).catch(() => null) : null;
+  if (statusChannel) {
+    const embed = new EmbedBuilder()
+      .setTitle('Priority Ended')
+      .setColor(0x2B2D31)
+      .addFields(
+        { name: 'Type', value: request.type, inline: true },
+        { name: 'Ended', value: `<t:${Math.floor(Date.now()/1000)}:t>`, inline: true }
+      )
+      .setFooter({ text: `Request ID: ${requestId}` });
+    await statusChannel.send({ embeds: [embed] });
+  }
+
+  await interaction.update({ components: [] });
+}
+
+if (interaction.customId.startsWith('priority_cancel_')) {
+  const requestId = interaction.customId.replace('priority_cancel_', '');
+  const request = await Priority.findOne({ requestId });
+  if (!request || request.status !== 'approved') return;
+
+  request.status = 'canceled';
+  await request.save();
+  await interaction.update({ components: [] });
+  const timer = reminderTimers.get(requestId);
+  if (timer) {
+    clearTimeout(timer);
+    reminderTimers.delete(requestId);
+  }
+}
+
+if (interaction.customId.startsWith('priority_withdraw_')) {
+  const requestId = interaction.customId.replace('priority_withdraw_', '');
+  const request = await Priority.findOne({ requestId });
+  if (!request || request.status !== 'pending') return;
+
+  request.status = 'canceled';
+  await request.save();
+
+  await interaction.update({ components: [] }).catch(() => {});
+
+  const chanId = PRIORITY_REQUEST_CHANNELS[request.guildId];
+  const ch = chanId ? await interaction.client.channels.fetch(chanId).catch(() => null) : null;
+  if (ch) {
+    await ch.send(`⚠️ Priority request ${requestId} by <@${request.requesterId}> was withdrawn.`).catch(() => {});
+  }
+  const timer = reminderTimers.get(requestId);
+  if (timer) {
+    clearTimeout(timer);
+    reminderTimers.delete(requestId);
+  }
+}
 if (interaction.customId === 'shift_break') {
   const shift = activeShifts.get(userId);
   if (!shift || shift.onBreak) return;
