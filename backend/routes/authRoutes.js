@@ -54,7 +54,7 @@ router.get("/callback", async (req, res) => {
       headers: { "Content-Type": "application/x-www-form-urlencoded" }
     });
 
-    const { access_token, token_type } = tokenRes.data;
+    const { access_token, refresh_token, expires_in, token_type } = tokenRes.data;
 
     // Get user info
     const userRes = await axios.get(`${DISCORD_API}/users/@me`, {
@@ -126,6 +126,8 @@ router.get("/callback", async (req, res) => {
         discordId: user.id,
         username: user.username,
         accessToken: access_token,
+        refreshToken: refresh_token,
+        expiresAt: Date.now() + expires_in * 1000,
         tokenType: token_type
       },
       { upsert: true }

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
-const AuthUser = require("../backend/models/authUser");
 const axios = require("axios");
+const { getValidAccess } = require("../utils/tokenManager");
 
 const STAFF_ROLE_ID = "1375605232226140300";
 
@@ -27,17 +27,17 @@ module.exports = {
         });
       }
 
-      const authUser = await AuthUser.findOne({ discordId: targetUser.id });
-      if (!authUser || !authUser.accessToken) {
+      const tokenInfo = await getValidAccess(targetUser.id);
+      if (!tokenInfo) {
         return interaction.reply({
-          content: `❌ ${targetUser.tag} has not authenticated through the bot.`,
+          content: `❌ ${targetUser.tag} has not authenticated through the bot or their session expired.`,
           flags: 64
         });
       }
 
       const response = await axios.get("https://discord.com/api/users/@me/guilds", {
         headers: {
-          Authorization: `${authUser.tokenType} ${authUser.accessToken}`
+          Authorization: `${tokenInfo.tokenType} ${tokenInfo.accessToken}`
         }
       });
 
@@ -80,7 +80,7 @@ module.exports = {
 
       if (err?.response?.status === 401) {
         return interaction.reply({
-          content: `❌ Token expired for <@${interaction.options.getUser("user").id}>. Ask them to run \`/auth\`.`,
+          content: `❌ Token invalid for <@${interaction.options.getUser("user").id}>. Ask them to run \`/auth\`.`,
           flags: 64
         });
       }

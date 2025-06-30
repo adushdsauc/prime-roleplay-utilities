@@ -4,6 +4,8 @@ const authUserSchema = new mongoose.Schema({
   discordId: { type: String, required: true, unique: true },
   username: String,
   accessToken: String,
+  refreshToken: String,
+  expiresAt: Date,
   tokenType: String
 });
 
