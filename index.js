@@ -35,9 +35,11 @@ const {
   VERIFIED_ROLE,
   BOTH_IN_GUILD_ROLE,
   MAIN_GUILD_ID,
+
   XBOX_GUILD_ID,
   PLAYSTATION_GUILD_ID
 } = require('./utils/constants');
+
 
 const PRIORITY_REQUEST_CHANNELS = {
   '1372312806107512894': process.env.XBOX_PRIORITY_REQUEST_CHANNEL_ID,
@@ -522,6 +524,7 @@ await interaction.channel.send({ embeds: [confirmEmbed] });
       // Update roles in the main guild
       try {
         const guild = await client.guilds.fetch(MAIN_GUILD_ID).catch(() => null);
+
         const member = await guild?.members.fetch(userId).catch(() => null);
         if (member) {
           await member.roles.remove(APPLIED_ROLE).catch(() => {});

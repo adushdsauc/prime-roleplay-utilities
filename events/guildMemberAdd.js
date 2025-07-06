@@ -8,6 +8,7 @@ const {
   VERIFIED_ROLE,
   BOTH_IN_GUILD_ROLE,
   MAIN_GUILD_ID,
+
   XBOX_GUILD_ID,
   PLAYSTATION_GUILD_ID
 } = require("../utils/constants");
@@ -222,6 +223,7 @@ const roleIds = [...(config.always || []), ...(config[departmentKey] || [])];
     }
 
     // ✅ Update main guild roles if user completed verification
+
     try {
       const AuthUser = require("../backend/models/authUser");
       const verified = await AuthUser.findOne({ discordId: member.id });
@@ -244,6 +246,7 @@ const roleIds = [...(config.always || []), ...(config[departmentKey] || [])];
           if (inXbox && inPs) {
             await mainMember.roles.add(BOTH_IN_GUILD_ROLE).catch(() => {});
           }
+
         }
       }
     } catch (err) {
