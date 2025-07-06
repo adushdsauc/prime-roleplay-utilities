@@ -3,8 +3,14 @@ const AcceptedUser = require("../models/AcceptedUser");
 const Invite = require("../models/Invite");
 const Callsign = require("../models/Callsign");
 
-const XBOX_GUILD_ID = "1372312806107512894";
-const PLAYSTATION_GUILD_ID = "1369495333574545559";
+const {
+  APPLIED_ROLE,
+  VERIFIED_ROLE,
+  BOTH_IN_GUILD_ROLE,
+  MAIN_GUILD_ID,
+  XBOX_GUILD_ID,
+  PLAYSTATION_GUILD_ID
+} = require("../utils/constants");
 const MASTER_LOG_CHANNEL_ID = "1379209193520627743";
 
 const LOG_CHANNELS = {
@@ -213,6 +219,35 @@ const roleIds = [...(config.always || []), ...(config[departmentKey] || [])];
     } catch (err) {
       const msg = `❌ Failed to log member join for ${member.user.tag}: ${err.message}`;
       console.warn(msg);
+    }
+
+    // ✅ Update main guild roles if user completed verification
+    try {
+      const AuthUser = require("../backend/models/authUser");
+      const verified = await AuthUser.findOne({ discordId: member.id });
+      if (verified) {
+        // Resolve member in the main guild
+        const mainGuild = guildId === MAIN_GUILD_ID
+          ? member.guild
+          : await member.client.guilds.fetch(MAIN_GUILD_ID).catch(() => null);
+        const mainMember = await mainGuild?.members.fetch(member.id).catch(() => null);
+
+        if (mainMember) {
+          await mainMember.roles.remove(APPLIED_ROLE).catch(() => {});
+          await mainMember.roles.add(VERIFIED_ROLE).catch(() => {});
+
+          const xboxGuild = await member.client.guilds.fetch(XBOX_GUILD_ID).catch(() => null);
+          const psGuild = await member.client.guilds.fetch(PLAYSTATION_GUILD_ID).catch(() => null);
+          const inXbox = await xboxGuild?.members.fetch(member.id).catch(() => null);
+          const inPs = await psGuild?.members.fetch(member.id).catch(() => null);
+
+          if (inXbox && inPs) {
+            await mainMember.roles.add(BOTH_IN_GUILD_ROLE).catch(() => {});
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`❌ Role update after join failed for ${member.user.tag}:`, err);
     }
 
     console.log(`✅ ${member.user.tag} joined ${department}, callsign ${callsign}`);
