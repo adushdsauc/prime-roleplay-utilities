@@ -34,6 +34,8 @@ const {
   APPLIED_ROLE,
   VERIFIED_ROLE,
   BOTH_IN_GUILD_ROLE,
+  MAIN_GUILD_ID,
+
   XBOX_GUILD_ID,
   PLAYSTATION_GUILD_ID
 } = require('./utils/constants');
@@ -519,9 +521,10 @@ await interaction.channel.send({ embeds: [confirmEmbed] });
     if (verified) {
       clearInterval(interval);
 
-      // Update roles in the application guild
+      // Update roles in the main guild
       try {
-        const guild = await client.guilds.fetch(guildId).catch(() => null);
+        const guild = await client.guilds.fetch(MAIN_GUILD_ID).catch(() => null);
+
         const member = await guild?.members.fetch(userId).catch(() => null);
         if (member) {
           await member.roles.remove(APPLIED_ROLE).catch(() => {});

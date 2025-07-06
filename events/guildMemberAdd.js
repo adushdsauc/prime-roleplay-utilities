@@ -7,6 +7,8 @@ const {
   APPLIED_ROLE,
   VERIFIED_ROLE,
   BOTH_IN_GUILD_ROLE,
+  MAIN_GUILD_ID,
+
   XBOX_GUILD_ID,
   PLAYSTATION_GUILD_ID
 } = require("../utils/constants");
@@ -220,20 +222,31 @@ const roleIds = [...(config.always || []), ...(config[departmentKey] || [])];
       console.warn(msg);
     }
 
-    // ✅ Update application roles if user completed verification
+    // ✅ Update main guild roles if user completed verification
+
     try {
       const AuthUser = require("../backend/models/authUser");
       const verified = await AuthUser.findOne({ discordId: member.id });
       if (verified) {
-        await freshMember.roles.remove(APPLIED_ROLE).catch(() => {});
-        await freshMember.roles.add(VERIFIED_ROLE).catch(() => {});
+        // Resolve member in the main guild
+        const mainGuild = guildId === MAIN_GUILD_ID
+          ? member.guild
+          : await member.client.guilds.fetch(MAIN_GUILD_ID).catch(() => null);
+        const mainMember = await mainGuild?.members.fetch(member.id).catch(() => null);
 
-        const otherGuildId = guildId === XBOX_GUILD_ID ? PLAYSTATION_GUILD_ID : XBOX_GUILD_ID;
-        const otherGuild = await member.client.guilds.fetch(otherGuildId).catch(() => null);
-        const inOtherGuild = await otherGuild?.members.fetch(member.id).catch(() => null);
+        if (mainMember) {
+          await mainMember.roles.remove(APPLIED_ROLE).catch(() => {});
+          await mainMember.roles.add(VERIFIED_ROLE).catch(() => {});
 
-        if (inOtherGuild) {
-          await freshMember.roles.add(BOTH_IN_GUILD_ROLE).catch(() => {});
+          const xboxGuild = await member.client.guilds.fetch(XBOX_GUILD_ID).catch(() => null);
+          const psGuild = await member.client.guilds.fetch(PLAYSTATION_GUILD_ID).catch(() => null);
+          const inXbox = await xboxGuild?.members.fetch(member.id).catch(() => null);
+          const inPs = await psGuild?.members.fetch(member.id).catch(() => null);
+
+          if (inXbox && inPs) {
+            await mainMember.roles.add(BOTH_IN_GUILD_ROLE).catch(() => {});
+          }
+
         }
       }
     } catch (err) {
