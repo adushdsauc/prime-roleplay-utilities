@@ -29,6 +29,15 @@ const SHIFT_LOG_CHANNELS = {
   '1369495333574545559': '1376607873945174119', // PS server → PS log
 };
 
+// Shared role and guild constants
+const {
+  APPLIED_ROLE,
+  VERIFIED_ROLE,
+  BOTH_IN_GUILD_ROLE,
+  XBOX_GUILD_ID,
+  PLAYSTATION_GUILD_ID
+} = require('./utils/constants');
+
 const PRIORITY_REQUEST_CHANNELS = {
   '1372312806107512894': process.env.XBOX_PRIORITY_REQUEST_CHANNEL_ID,
   '1369495333574545559': process.env.PS_PRIORITY_REQUEST_CHANNEL_ID,
@@ -481,24 +490,6 @@ if (interaction.isButton() && interaction.customId.startsWith("accept_app_")) {
   } catch (err) {
     console.error("❌ Failed to save accepted user:", err);
   }
-  const guildId = interaction.guildId;
-const guild = await client.guilds.fetch(guildId).catch(() => null);
-const member = await guild?.members.fetch(userId).catch(() => null);
-
-if (member) {
-  const APPLIED_ROLE = "1368345426482167818";
-  const ACCEPTED_ROLE = "1368345401815465985";
-
-  try {
-    await member.roles.remove(APPLIED_ROLE);
-    await member.roles.add(ACCEPTED_ROLE);
-    console.log(`✅ Updated roles for ${userId}`);
-  } catch (err) {
-    console.error(`❌ Failed to update roles for ${userId}:`, err);
-  }
-} else {
-  console.warn(`⚠️ Could not find guild member ${userId}`);
-}
 
   const confirmEmbed = new EmbedBuilder()
   .setTitle("✅ Application Accepted")
@@ -526,6 +517,20 @@ await interaction.channel.send({ embeds: [confirmEmbed] });
     const verified = await AuthUser.findOne({ discordId: userId });
     if (verified) {
       clearInterval(interval);
+
+      // Update roles in the application guild
+      try {
+        const guild = await client.guilds.fetch(guildId).catch(() => null);
+        const member = await guild?.members.fetch(userId).catch(() => null);
+        if (member) {
+          await member.roles.remove(APPLIED_ROLE).catch(() => {});
+          await member.roles.add(VERIFIED_ROLE).catch(() => {});
+        } else {
+          console.warn(`⚠️ Could not find guild member ${userId} for role update`);
+        }
+      } catch (err) {
+        console.error(`❌ Failed to update roles for ${userId}:`, err);
+      }
 
       const createSecureInvite = require("./utils/createSecureInvite");
       const platformLabel = platform.charAt(0).toUpperCase() + platform.slice(1);
