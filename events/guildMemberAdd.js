@@ -3,8 +3,13 @@ const AcceptedUser = require("../models/AcceptedUser");
 const Invite = require("../models/Invite");
 const Callsign = require("../models/Callsign");
 
-const XBOX_GUILD_ID = "1372312806107512894";
-const PLAYSTATION_GUILD_ID = "1369495333574545559";
+const {
+  APPLIED_ROLE,
+  VERIFIED_ROLE,
+  BOTH_IN_GUILD_ROLE,
+  XBOX_GUILD_ID,
+  PLAYSTATION_GUILD_ID
+} = require("../utils/constants");
 const MASTER_LOG_CHANNEL_ID = "1379209193520627743";
 
 const LOG_CHANNELS = {
@@ -213,6 +218,26 @@ const roleIds = [...(config.always || []), ...(config[departmentKey] || [])];
     } catch (err) {
       const msg = `❌ Failed to log member join for ${member.user.tag}: ${err.message}`;
       console.warn(msg);
+    }
+
+    // ✅ Update application roles if user completed verification
+    try {
+      const AuthUser = require("../backend/models/authUser");
+      const verified = await AuthUser.findOne({ discordId: member.id });
+      if (verified) {
+        await freshMember.roles.remove(APPLIED_ROLE).catch(() => {});
+        await freshMember.roles.add(VERIFIED_ROLE).catch(() => {});
+
+        const otherGuildId = guildId === XBOX_GUILD_ID ? PLAYSTATION_GUILD_ID : XBOX_GUILD_ID;
+        const otherGuild = await member.client.guilds.fetch(otherGuildId).catch(() => null);
+        const inOtherGuild = await otherGuild?.members.fetch(member.id).catch(() => null);
+
+        if (inOtherGuild) {
+          await freshMember.roles.add(BOTH_IN_GUILD_ROLE).catch(() => {});
+        }
+      }
+    } catch (err) {
+      console.error(`❌ Role update after join failed for ${member.user.tag}:`, err);
     }
 
     console.log(`✅ ${member.user.tag} joined ${department}, callsign ${callsign}`);

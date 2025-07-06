@@ -29,14 +29,15 @@ const SHIFT_LOG_CHANNELS = {
   '1369495333574545559': '1376607873945174119', // PS server → PS log
 };
 
-// Roles used during the application and verification process
-const APPLIED_ROLE = '1368345426482167818';
-const VERIFIED_ROLE = '1368345401815465985';
-const BOTH_IN_GUILD_ROLE = '1368341118487494787';
+// Shared role and guild constants
+const {
+  APPLIED_ROLE,
+  VERIFIED_ROLE,
+  BOTH_IN_GUILD_ROLE,
+  XBOX_GUILD_ID,
+  PLAYSTATION_GUILD_ID
+} = require('./utils/constants');
 
-// Platform guild IDs
-const XBOX_GUILD_ID = '1372312806107512894';
-const PLAYSTATION_GUILD_ID = '1369495333574545559';
 
 const PRIORITY_REQUEST_CHANNELS = {
   '1372312806107512894': process.env.XBOX_PRIORITY_REQUEST_CHANNEL_ID,
