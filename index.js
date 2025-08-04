@@ -23,10 +23,16 @@ const { startApplication } = require("./applicationSessionHandler"); // place at
 const activeShifts = new Map();
 const summarizeShifts = require('./utils/weeklyShiftSummary');
 const registerCommands = require('./utils/registerCommands');
+const { assignDepartment } = require('./utils/assignDepartment');
 
 const SHIFT_LOG_CHANNELS = {
   '1372312806107512894': '1376607799622238469', // Xbox server → Xbox log
   '1369495333574545559': '1376607873945174119', // PS server → PS log
+};
+
+const DEPARTMENT_CHANNELS = {
+  '1372312806107512894': '1401752038693404723',
+  '1369495333574545559': '1401752106850844804',
 };
 
 // Shared role and guild constants
@@ -72,7 +78,9 @@ const client = new Client({
 });
 
 const guildMemberAddHandler = require("./events/guildMemberAdd");
-client.on("guildMemberAdd", guildMemberAddHandler.execute);
+if (process.env.ENABLE_AUTO_CALLSIGN === 'true') {
+  client.on("guildMemberAdd", guildMemberAddHandler.execute);
+}
 
 client.commands = new Collection();
 const sessions = new Map();
@@ -98,6 +106,28 @@ const Priority = require('./models/Priority');
 if (interaction.isButton()) {
   const userId = interaction.user.id;
   const platform = interaction.guildId === '1372312806107512894' ? 'Xbox' : 'PlayStation';
+
+  if (['dept_civilian', 'dept_sasp', 'dept_safr'].includes(interaction.customId)) {
+    const deptMap = {
+      'dept_civilian': 'CIVILIAN',
+      'dept_sasp': 'PSO',
+      'dept_safr': 'SAFR'
+    };
+    const member = await interaction.guild.members.fetch(userId).catch(() => null);
+    if (!member) {
+      await interaction.reply({ content: '❌ Member not found.', ephemeral: true });
+      return;
+    }
+    try {
+      const callsign = await assignDepartment(member, deptMap[interaction.customId]);
+      const label = interaction.customId === 'dept_sasp' ? 'SASP' : deptMap[interaction.customId];
+      await interaction.reply({ content: `✅ Assigned to ${label} with callsign \`${callsign}\`.`, ephemeral: true });
+    } catch (err) {
+      console.error('❌ Department assign failed:', err);
+      await interaction.reply({ content: '❌ Failed to assign department.', ephemeral: true });
+    }
+    return;
+  }
 
 const updateEmbedStatus = (statusText, color, extra = '') => {
   const embed = EmbedBuilder.from(interaction.message.embeds[0]);
@@ -888,6 +918,28 @@ client.once("ready", async () => {
 
     await channel.send({ embeds: [embed], components: [row] });
     console.log("✅ Application panel posted.");
+  }
+
+  const deptEmbed = new EmbedBuilder()
+    .setTitle('Select Department')
+    .setDescription('Choose a department to receive roles and a callsign.')
+    .setColor(0x2B2D31);
+
+  const deptRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('dept_civilian').setLabel('Civilian').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('dept_sasp').setLabel('SASP').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('dept_safr').setLabel('SAFR').setStyle(ButtonStyle.Secondary)
+  );
+
+  for (const [guildId, channelId] of Object.entries(DEPARTMENT_CHANNELS)) {
+    const deptChannel = await client.channels.fetch(channelId).catch(() => null);
+    if (!deptChannel?.isTextBased()) continue;
+    const recent = await deptChannel.messages.fetch({ limit: 10 });
+    const posted = recent.some(msg => msg.author.id === client.user.id && msg.embeds[0]?.title === 'Select Department');
+    if (!posted) {
+      await deptChannel.send({ embeds: [deptEmbed], components: [deptRow] });
+      console.log(`✅ Department buttons posted in guild ${guildId}.`);
+    }
   }
 });
 
