@@ -105,6 +105,13 @@ const Priority = require('./models/Priority');
 
 if (interaction.isButton()) {
   const userId = interaction.user.id;
+
+  if (interaction.customId.startsWith('verify_')) {
+    const platform = interaction.customId.split('_')[1];
+    const { startVerification } = require('./verificationSessionHandler');
+    await startVerification(interaction, platform);
+    return;
+  }
   const platform = interaction.guildId === '1372312806107512894' ? 'Xbox' : 'PlayStation';
 
   if (['dept_civilian', 'dept_sasp', 'dept_safr'].includes(interaction.customId)) {
