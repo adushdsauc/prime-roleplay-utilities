@@ -13,44 +13,44 @@ PSO: {
     "Director Of Public Safety"
   ],
  "PSO | Rookie": {
-    xbox: { range: "1L-500 - 1L-600", roleId: "1372312806204117013" },
-    playstation: { range: "1L-500 - 1L-600", roleId: "1369497170432229417" }
+    xbox: { range: "C-1251 - C-2000", roleId: "1372312806204117013" },
+    playstation: { range: "C-1251 - C-2000", roleId: "1369497170432229417" }
   },
   "PSO | Officer": {
-    xbox: { range: "1L-151 - 1L-250", roleId: "1372312806204117014" },
-    playstation: { range: "1L-151 - 1L-250", roleId: "1369520223643766794" }
+    xbox: { range: "B-751 - B-1250", roleId: "1372312806204117014" },
+    playstation: { range: "B-751 - B-1250", roleId: "1369520223643766794" }
   },
   "PSO | Sr. Officer": {
-    xbox: { range: "1L-100 - 1L-150", roleId: "1372312806204117015" },
-    playstation: { range: "1L-100 - 1L-150", roleId: "1369520219315503154" }
+    xbox: { range: "B-451 - B-750", roleId: "1372312806204117015" },
+    playstation: { range: "B-451 - B-750", roleId: "1369520219315503154" }
   },
   "PSO | Sergeant": {
-    xbox: { range: "1S-61 - 1S-80", roleId: "1372312806204117016" },
-    playstation: { range: "1S-61 - 1S-80", roleId: "1369520227829809223" }
+    xbox: { range: "B-251 - B-450", roleId: "1372312806204117016" },
+    playstation: { range: "B-251 - B-450", roleId: "1369520227829809223" }
   },
   "PSO | Master Sergeant": {
-    xbox: { range: "1S-41 - 1S-60", roleId: "1372312806204117017" },
-    playstation: { range: "1S-41 - 1S-60", roleId: "1369757277656973362" }
+    xbox: { range: "B-151 - B-250", roleId: "1372312806204117017" },
+    playstation: { range: "B-151 - B-250", roleId: "1369757277656973362" }
   },
   "PSO | Lieutenant": {
-    xbox: { range: "1S-21 - 1S-40", roleId: "1372312806204117018" },
-    playstation: { range: "1S-21 - 1S-40", roleId: "1369520226344898581" }
+    xbox: { range: "B-116 - B-150", roleId: "1372312806204117018" },
+    playstation: { range: "B-116 - B-150", roleId: "1369520226344898581" }
   },
   "PSO | Captain": {
-    xbox: { range: "1K-06 - 1K-20", roleId: "1372312806204117019" },
-    playstation: { range: "1K-06 - 1K-20", roleId: "1369497203600654406" }
+    xbox: { range: "D-109 - D-115", roleId: "1372312806204117019" },
+    playstation: { range: "D-109 - D-115", roleId: "1369497203600654406" }
   },
   "PSO | Commander": {
-    xbox: { range: "1K-03 - 1K-05", roleId: "1372312806204117020" },
-    playstation: { range: "1K-03 - 1K-05", roleId: "1369520228010037308" }
+    xbox: { range: "D-103 - D-108", roleId: "1372312806204117020" },
+    playstation: { range: "D-103 - D-108", roleId: "1369520228010037308" }
   },
   "Assistant Director Of Public Safety": {
-    xbox: { range: "1K-02", roleId: "1372312806212239408" },
-    playstation: { range: "1K-02", roleId: "1370380132597895268" }
+    xbox: { range: "D-102", roleId: "1372312806212239408" },
+    playstation: { range: "D-102", roleId: "1370380132597895268" }
   },
   "Director Of Public Safety": {
-    xbox: { range: "1K-01", roleId: "1372312806212239409" },
-    playstation: { range: "1K-01", roleId: "1369497153918996630" }
+    xbox: { range: "D-101", roleId: "1372312806212239409" },
+    playstation: { range: "D-101", roleId: "1369497153918996630" }
   }
 },
 SAFR: {
@@ -85,8 +85,8 @@ SAFR: {
     playstation: { roleId: "1369520231285915749", range: "FF-05 - FF-10" }
   },
   "Battalion Chief": {
-    xbox: { roleId: "1372312806166102084", range: "BATT-01 - BATT-03" },
-    playstation: { roleId: "1369520230023430184", range: "BATT-01 - BATT-03" }
+    xbox: { roleId: "1372312806166102084", range: "BAT-01 - BAT-01" },
+    playstation: { roleId: "1369520230023430184", range: "BAT-01 - BAT-01" }
   },
   "Assistant Director": {
     xbox: { roleId: "1372312806191399026", range: "Command 2 - Command 2" },
